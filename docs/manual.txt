@@ -1,0 +1,10 @@
+// !--- Server !--- //
+
+1. PORT 53025
+
+
+a) Listen for new client
+b) GET ->> response OK | ERROR 
+c) GETLIST FILES 
+d) PING arg = 0xaabbccdd / PONG ->> return arg xor  0x13371337   
+
