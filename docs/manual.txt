@@ -2,11 +2,19 @@
 
 1. PORT 53025
 
-
 a) Listen for new client
 b) GET ->> response OK | ERROR 
 c) GETLIST FILES 
 d) PING arg = 0xaabbccdd / PONG ->> return arg xor  0x13371337   
 
 each request must end with '\n' ie 0xa
+
+// !--- FILE HEADER !--- //
+
+// Each field is packed little endian
+struct FileHeader
+{
+	uint64_t filesize;       // Only file's size not header
+	uint8_t sha256_hash[32]; // hash of file not header
+};
 
