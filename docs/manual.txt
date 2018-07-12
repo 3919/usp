@@ -8,3 +8,5 @@ b) GET ->> response OK | ERROR
 c) GETLIST FILES 
 d) PING arg = 0xaabbccdd / PONG ->> return arg xor  0x13371337   
 
+each request must end with '\n' ie 0xa
+
