@@ -97,7 +97,13 @@ class File():
         # is ready to be sent
         except FileNotFoundError:
             logging.info('User requested {}, but file not found.'.format(self.filename))
+            self.sendEmpty()
 
+        except PermissionError:
+            logging.info('User requested {}, but got permission denied.'.format(self.filename))
+            self.sendEmpty()
+
+    def sendEmpty(self, sock):
             # Redundant operation, just for security
             # to be sure initilization of file header class never changes in future
             self.header.filesize = 0
@@ -129,26 +135,13 @@ class Session():
         except socket.timeout:
             self.socket.close()
             logging.info('Client timed out from {}:{}'.format(self.addr[0],self.addr[1]))
-        except ConnectionResetError:
-            logging.info('Early connection close from {}:{}'.format(self.addr[0],self.addr[1]))
+        except ConnectionResetError as e:
+            logging.info('{} from {}:{}'.format(e.__str__(),self.addr[0],self.addr[1]))
 
     # Reads to first space and stores request
     # with fetched value
     def fetchRequest(self):
-        data = b''
-        ch = ''
-        i = 0
-        while True:
-            ch = self.socket.recv(1)
-            i += 1
-            if i == MAX_REQUEST_LEN:
-                self.request = ['']
-                return
-
-            if ch == b'\n':
-                break
-
-            data += ch
+        data = recvUntilByte(self.socket, b'\n')
         data = data.decode('utf-8')
         data = data.split(' ')
         self.request = data[0]
@@ -184,3 +177,29 @@ class Session():
 
     def pingResponse(self):
         self.socket.sendall(b'PONG_USP %s\n' % self.shared_name.encode('utf-8'))
+
+def recvUntilByte(socket, untilch):
+    data = b''
+    ch = b''
+    i = 0
+    while True:
+        ch = socket.recv(1)
+
+        if ch == untilch:
+            break
+
+        data += ch
+
+    return data
+
+def recvUntilSize(socket, size):
+    data = b''
+    ch = b''
+    i = 0
+    while i < size:
+        data_ = socket.recv(size)
+        i+=len(data_)
+        data += data_
+
+    return data
+        
