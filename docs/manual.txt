@@ -1,13 +1,56 @@
+This is reference of protocol used in Unified Sharing Platform
+
+
 // !--- Server !--- //
 
-1. PORT 53025
+Server's responsobility is to handle predefined requests from
+USP's clients. It listenes on port 53025. Each request must
+be ended with endline to indicate end of message. Each
+message cant be longer than 1024 bytes. Available requests:
 
-a) Listen for new client
-b) GET ->> response OK | ERROR 
-c) GETLIST FILES 
-d) PING arg = 0xaabbccdd / PONG ->> return arg xor  0x13371337   
+--------
+1. GET
 
-each request must end with '\n' ie 0xa
+   Description:
+	  Server sends requested file if it is   
+    shared otherwise connection is closed.
+		
+   Communication form:
+	 	Client sends 'GET <filename>\n'
+		Server sends '{File header -- defined in section FILE HEADER}{File contents}'
+		Server closes connection
+		Client closes connection
+---------
+
+---------
+2. GETLIST
+
+   Description:
+    Server sends list of shared files with
+    others that are ready to download.
+		Each filename is seprated with '\0'
+		and whole message is ended with '\n'
+ 
+   Communication form:
+	 	Client sends 'GETLIST\n'
+		Server sends '{File1 name}\0{File2 name}\0...{FileX name}\0\n'
+		Server closes connection
+		Client closes connection
+
+---------
+
+---------
+3. PING
+    
+	 Description:
+    Used to check if server is present at
+	  given host's machine.
+
+   Communication form:
+	 	Client sends 'PING\n'
+		Server sends 'PONG_USP\n'
+		Server closes connection
+		Client closes connection
 
 // !--- FILE HEADER !--- //
 
