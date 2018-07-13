@@ -8,8 +8,6 @@ import glob
 
 REQUESTS = ['GET', 'GETLIST', 'PING']
 MAX_REQUEST_LEN = 1024
-PONG_XOR_VAL = 0x13371337
-
 
 class FileServer():
     def __init__(self, port = 53025, host = ''):
@@ -124,8 +122,7 @@ class Session():
         self.socket.close()
 
     def pingResponse(self):
-        self.socket.sendall(b'PONG_USP')
-        self.socket.sendall(b'\n')
+        self.socket.sendall(b'PONG_USP\n')
 
     def logRequest(self):
         pass
