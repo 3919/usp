@@ -48,6 +48,10 @@ def recvUntil(untilch):
 
     return data
 
+def timeoutTest(s):
+    s.sendall(bytes(REQUESTS[0][:4],'utf-8'))
+    time.sleep(7)
+
 def getTest(s):
     s.sendall(bytes(REQUESTS[0],'utf-8'))
     
@@ -93,7 +97,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     print("Sending GET packet test.")
     getTest(s)
 
-    time.sleep(2)
+    time.sleep(1)
     
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
@@ -101,7 +105,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     print("\n\nSending GETLIST packet test.")
     getlistTest(s)
 
-    time.sleep(2)
+    time.sleep(1)
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
@@ -109,11 +113,16 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     print("\n\nSending PING packet test.")
     pingTestSimple(s)
 
+    time.sleep(1)
 
-
-
-
-
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.connect((HOST, PORT))
+    
+    print("\n\nStarting timeout test.")
+    try:
+        timeoutTest(s)
+    except:
+        print('Exception while timeout test occured')
 
 
 
