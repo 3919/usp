@@ -31,8 +31,8 @@ class client:
     def _run(self):
         command = ""
         self._handleCommand("SCAN")
-        self._handleCommand("GETLIST")
-        self._handleCommand("LISTFILES")
+        self._handleCommand("HELP")
+        
         while True:
             command = input("Type command : ")
             command = command 
@@ -49,7 +49,8 @@ class client:
             "SCAN" : self._scanNet, 
             "GET" : self._getFile,
             "GETLIST" : self._getFileList,
-            "LISTFILES" : self._listFiles
+            "LISTFILES" : self._listFiles,
+            "HELP" : self._printHelp
         }
         if command[0] not in cmd:
             return False 
@@ -71,13 +72,13 @@ class client:
                     idx = len(line)                
                 configFile[i] = line[:idx]
 
-            #  append device prefered by user asved in file
+            #  append device prefered by user saved in file
             preferredDevices = list( filter(None,configFile) )
             netmask = ''
             ip_addr = ''
 
     
-            # if user don't have config file, ask for device devices  
+            # if user don't have config file, let him choose devices  
             if len(preferredDevices) == 0:
                 avaliabledevices = netifaces.interfaces()
                 print("List of avaliable devices: ")
@@ -153,11 +154,9 @@ class client:
         # 
         for i in range(len(threads)):
             threads[i].join()
-        print("Avaliable hosts: " )
-        for user in self.usersDescriptor["HOST"]:
+        
 
-            print(user["IP"], user["NICK"])
-    
+        self._handleCommand("GETLIST")
 
     def _authenticateUser(self, sock):
        
@@ -191,7 +190,6 @@ class client:
         if self.usersDescriptor["HOST"] is None:
             return False;
         
-        
         reqestedFiles = []
         reqestedUsers = []
         FILES = []
@@ -211,10 +209,12 @@ class client:
         #  it has to be at least one file in command and if '*' occured it can't be more files as args
         if len(FILES) == 0  or  len(FILES) > 1 and '*' in FILES:
             print("Incorrect syntax ")
+            self._handleCommand("HELP")
             return False
         # same rules as file 
         if len(USERS) == 0 or len(USERS) > 1 and  '*' in USERS:
             print("Incorrect syntax ")
+            self._handleCommand("HELP")
             return False
 
         # check for wildcard sytax in command
@@ -222,15 +222,18 @@ class client:
             asterix_in_file = True;
         if '*' in USERS:
             asterix_in_user = True;
+        
         # get users
         if asterix_in_user:
             for usr in self.usersDescriptor[ "HOST" ] :
                 reqestedUsers.append(usr[ "IP" ]) 
         else :
             for i,usr in enumerate(USERS) :
-                if self._searchUsr(usr) == -1:
-                    continue          
-                reqestedUsers.append(self.usersDescriptor[ "HOST" ][i][ "IP" ] )  
+                usrIdx = self._searchUsr(usr) 
+                if usrIdx == -1:
+                    continue
+                print(i)          
+                reqestedUsers.append(self.usersDescriptor[ "HOST" ][usrIdx][ "IP" ] )  
             
 
         if asterix_in_file :
@@ -238,16 +241,17 @@ class client:
              for usr in self.usersDescriptor["HOST"]:
                 for f in self.userFiles[usr["IP"]]:
                     reqestedFiles.append(f)
-             
         else:# get requested files
             reqestedFiles = FILES 
-        print(reqestedFiles)
 
-        # print(reqestedFiles)
+        
+
+        # print(reqestedFiles, reqestedUsers)
         for file in reqestedFiles:
             for usr in reqestedUsers:
                 # print(file,usr
-                self._downloadFile(file,usr)
+                if file in self.userFiles[usr]:
+                    self._downloadFile(file,usr)
         
 
     def _searchUsr(self, usr):
@@ -304,11 +308,13 @@ class client:
             reqestedUsers =  command[1:]
         else: # display all avaliable hosts files
             reqestedUsers = self.usersDescriptor["HOST"] 
-        print("File List : ")
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.userFiles = {}
+
         for i, host in enumerate(reqestedUsers):
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             if host in self.usersDescriptor["HOST"]:
                 self.sock.connect( (host["IP"], self.usersDescriptor["PORT"] ) )
+                self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 self.sock.send(bytes("GETLIST\n", "UTF-8") )
                 byteRead = ""
                 fileName = ""
@@ -326,14 +332,25 @@ class client:
                     else:
                         fileName += byteRead.decode("utf-8")
                 
-        self.sock.close()
+            self.sock.close()
+        self._handleCommand("LISTFILES")
         return True
     
     def _listFiles(self, command):
+        print("Avaliable files: ")
         for usr in self.usersDescriptor["HOST"]:
             print("IP :  {}  NICK : {}".format(usr["IP"],usr['NICK']) )
             for f in self.userFiles[usr["IP"]]:
                 print("   -- ", f)
+
+    def _printHelp(self, command):
+        print("Avalaiable commands : ")
+        print(" --LISTFILES    -- list all files avaliable for download")
+        print(" --SCAN         -- scan network for active servers")
+        print(" --GETLIST      -- get file list from active users ")
+        print(" --GET * from * -- download files from users.")
+        print("     --*--         You can specify files and user Ex.") 
+        print("     --*--         get file1 file2 from user1 user2...")
 
 
 
