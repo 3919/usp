@@ -12,6 +12,8 @@ each request must end with '\n' ie 0xa
 // !--- FILE HEADER !--- //
 
 // Each field is packed little endian
+// filesize is then packed little endian
+// but sha256 is array type, so its like big endian packed
 struct FileHeader
 {
 	uint64_t filesize;       // Only file's size not header
