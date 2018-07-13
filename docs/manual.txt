@@ -56,6 +56,25 @@ message cant be longer than 1024 bytes. Available requests:
 		Server sends 'PONG_USP <server_username>\n'
 		Server closes connection
 		Client closes connection
+---------
+
+*** Server config file ***
+	Server needs config file to run. Config should be placed in settings/settings.ini
+	relative to server's script path. Required section of config is [main] and required
+	fields in [main] are shared_path and shared_name.
+
+	Minimalistic config file whould look like these:
+
+		[main]
+		shared_path=C:\Users\hlz\Desktop\shared
+		shared_name=holz
+
+	Valid settings:
+	
+		shared_path
+		shared_name
+
+*** ------------------- ****
 
 // !--- FILE HEADER !--- //
 
