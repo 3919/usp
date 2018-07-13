@@ -8,7 +8,7 @@ PORT =  53025
 PONG_XOR_VAL = 0x13371337
 PING_CHECK_VAL_BYTES = b'\x11\x22\x33\x44'
 PING_CHECK_VAL = 0x44332211
-REQUESTS = ['GET testfile.txt\n', 'GETLIST\n', 'PING \x11\x22\x33\x44\n']
+REQUESTS = ['GET kannakamui.png\n', 'GETLIST\n', 'PING \x11\x22\x33\x44\n']
 
 class FileHeader():
     def __init__(self):
@@ -34,17 +34,28 @@ def checkFileHash(filename, s1):
     s2 = unpacksha(f.read())
     return (s1 == s2)
 
-def recvUntil(untilch):
+def recvUntilByte(socket, untilch):
     data = b''
     ch = b''
     i = 0
     while True:
-        ch = s.recv(1)
+        ch = socket.recv(1)
 
         if ch == untilch:
             break
 
         data += ch
+
+    return data
+
+def recvUntilSize(socket, size):
+    data = b''
+    ch = b''
+    i = 0
+    while i < size:
+        data_ = socket.recv(size)
+        i+=len(data_)
+        data += data_
 
     return data
 
@@ -56,7 +67,7 @@ def getTest(s):
     s.sendall(bytes(REQUESTS[0],'utf-8'))
     
     filehead = FileHeader()
-    filehead.unpack(s.recv(40))
+    filehead.unpack(recvUntilSize(s,40))
 
     # Displaying info file header
     print("Filesize: {} bytes\nsha256: {}".format(
@@ -64,7 +75,11 @@ def getTest(s):
 
     # Saving file
     f = open('out','wb')
-    f.write(s.recv(filehead.filesize))
+    i = 0
+    while i < filehead.filesize:
+        data = recvUntilSize(s, filehead.filesize)
+        f.write(data)
+        i+=len(data)
     f.close()
     
     # Checking hash
@@ -73,14 +88,14 @@ def getTest(s):
 
 def getlistTest(s):
     s.sendall(bytes(REQUESTS[1],'utf-8'))
-    data = recvUntil(b'\n')
+    data = recvUntilByte(s, b'\n')
     data = data.split(b'\0')
     for entry in data:
         print(entry.decode('utf-8','ignore'))
     
 def pingTest(s):
     s.sendall(bytes(REQUESTS[2],'utf-8'))
-    data = recvUntil(b'\n')
+    data = recvUntilByte(s, b'\n')
     data = data.split(b' ')
     print('MSG: {}'.format(data[0].decode('utf-8')))
     isOk = ((struct.unpack('L', data[1])[0] ^ PONG_XOR_VAL) == PING_CHECK_VAL)
@@ -88,7 +103,7 @@ def pingTest(s):
 
 def pingTestSimple(s):
     s.sendall(bytes(REQUESTS[2],'utf-8'))
-    data = recvUntil(b'\n')
+    data = recvUntilByte(s, b'\n')
     print('MSG: {}'.format(data.decode('utf-8')))
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
