@@ -97,11 +97,11 @@ class File():
         # is ready to be sent
         except FileNotFoundError:
             logging.info('User requested {}, but file not found.'.format(self.filename))
-            self.sendEmpty()
+            self.sendEmpty(sock)
 
         except PermissionError:
             logging.info('User requested {}, but got permission denied.'.format(self.filename))
-            self.sendEmpty()
+            self.sendEmpty(sock)
 
     def sendEmpty(self, sock):
             # Redundant operation, just for security
