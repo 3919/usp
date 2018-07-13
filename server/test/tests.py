@@ -3,7 +3,7 @@ import time
 import struct
 import hashlib
 
-HOST = '192.168.1.5' 
+HOST = '127.0.0.1'
 PORT =  53025
 PONG_XOR_VAL = 0x13371337
 PING_CHECK_VAL_BYTES = b'\x11\x22\x33\x44'
