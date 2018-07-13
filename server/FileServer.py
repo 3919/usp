@@ -176,7 +176,7 @@ class Session():
     def getlistResponse(self):
         self.args = self.securePaths(self.args)
 
-        filelist = glob.glob(os.path.join(self.shared_path,'*'))
+        filelist = glob.glob(os.path.join(self.shared_path,'**'),recursive=True)
         for f in filelist:
             self.socket.sendall(bytes(os.path.relpath(f,self.shared_path),'utf-8'))
             self.socket.sendall(b'\0')
