@@ -15,6 +15,10 @@ message cant be longer than 1024 bytes. Available requests:
 	  Server sends requested file if it is   
     shared otherwise connection is closed.
 		
+		Caution:
+		 If file path contains '..' path traversal
+		 attempt is signaled and connection is closed
+		
    Communication form:
 	 	Client sends 'GET <filename>\n'
 		Server sends '{File header -- defined in section FILE HEADER}{File contents}'
@@ -44,11 +48,12 @@ message cant be longer than 1024 bytes. Available requests:
     
 	 Description:
     Used to check if server is present at
-	  given host's machine.
+	  given host's machine. Servers sends back
+		PONG with it's username
 
    Communication form:
 	 	Client sends 'PING\n'
-		Server sends 'PONG_USP\n'
+		Server sends 'PONG_USP <server_username>\n'
 		Server closes connection
 		Client closes connection
 
