@@ -9,7 +9,7 @@ import configparser
 import logging
 
 REQUESTS = ['GET', 'GETLIST', 'PING']
-SETTINGS_PATH = '.\\settings\\settings.ini'
+SETTINGS_PATH = os.path.join('.','settings','settings.ini')
 MAX_REQUEST_LEN = 1024
 
 logging.basicConfig(level=logging.INFO,
@@ -45,7 +45,7 @@ class FileServer():
         try:
             self.config['main']
         except KeyError:
-            msg = 'Error: main section missing in settings/settings.ini'
+            msg = 'Error: main section missing in {}'.format(os.path.join('settings','settings.ini'))
             logging.error(msg)
             raise ConfigError(msg)
 
@@ -54,7 +54,7 @@ class FileServer():
             if not os.path.exists(os.path.abspath(self.config['main']['shared_path'])):
                 raise ConfigError('Given path in shared_path@main is invalid')
         except KeyError:
-            msg = 'Error: shared_path@main missing in settings/settings.ini'
+            msg = 'Error: shared_path@main missing in {}'.format(os.path.join('settings','settings.ini'))
             logging.error(msg)
             raise ConfigError(msg)
 
@@ -62,7 +62,7 @@ class FileServer():
         try:
             self.config['main']['shared_name']
         except KeyError:
-            msg = 'Error: shared_name@main missing in settings/settings.ini'
+            msg = 'Error: shared_name@main missing in {}'.format(os.path.join('settings','settings.ini'))
             logging.error(msg)
             raise ConfigError(msg)
 
@@ -92,8 +92,18 @@ class File():
                 f.seek(0)
                 sock.sendfile(f)
 
+        # In case of File Not Found only header is sent
+        # Header is initialized with filesize = 0 so message
+        # is ready to be sent
         except FileNotFoundError:
-            print('User requested {}, but file not found.'.format(self.filename))
+            logging.info('User requested {}, but file not found.'.format(self.filename))
+
+            # Redundant operation, just for security
+            # to be sure initilization of file header class never changes in future
+            self.header.filesize = 0
+            self.header.sha256_hash = hashlib.sha256().digest()
+
+            sock.sendall(self.header.pack())
 
 
 class Session():
