@@ -87,3 +87,5 @@ struct FileHeader
 	uint8_t sha256_hash[32]; // hash of file not header
 };
 
+
+

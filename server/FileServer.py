@@ -9,12 +9,13 @@ import configparser
 import logging
 
 REQUESTS = ['GET', 'GETLIST', 'PING']
-SETTINGS_PATH = os.path.join('.','settings','settings.ini')
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+SETTINGS_PATH = os.path.join(BASE_DIR,'settings','settings.ini')
 MAX_REQUEST_LEN = 1024
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(message)s',
-                    filename=os.path.join('.','logs','server.log'),
+                    filename=os.path.join(BASE_DIR,'logs','server.log'),
                     filemode='w')
 
 class ConfigError(Exception):

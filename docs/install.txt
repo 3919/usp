@@ -1,0 +1,12 @@
+######################################
+######################################
+
+
+Application works with python 3
+
+Neccessary set of folder and plugins :
+
+1. Folder : ./client/download
+2. Folder : ./server/settings
+3. Folder : ./server/logs
+4. Plug-In : python-netifaces
