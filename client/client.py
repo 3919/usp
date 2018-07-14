@@ -6,32 +6,38 @@ import netifaces
 import random
 import struct
 import hashlib
+import configparser 
 
 class SocketError(Exception):
     pass
-
+class parseError(Exception):
+    pass
 class client:
     def __init__(self):
         
         PORT = 53025   
         if len(sys.argv) == 2:
             PORT = int(sys.argv[1] )
-
+        # main socket   
         self.sock  =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        
+        # keep information about avaliable hosts and port
         self.usersDescriptor = {
             "HOST" :[],    
             "PORT" : PORT
         }
-
+        self.filePath = ""
+        # keep user config to download files
+        self.userConfig ={}
         # keep user files
         self.userFiles = {}
-
 
     def _run(self):
         command = ""
         self._handleCommand("SCAN")
         self._handleCommand("HELP")
+        self._handleCommand("SETTINGS init")
+        self.filePath = self.userConfig["folder_path"] +\
+                        self.userConfig["folder_name"] +"/"
         
         while True:
             command = input("Type command : ")
@@ -49,8 +55,9 @@ class client:
             "SCAN" : self._scanNet, 
             "GET" : self._getFile,
             "GETLIST" : self._getFileList,
-            "LISTFILES" : self._listFiles,
-            "HELP" : self._printHelp
+            "SHOWFILES" : self._listFiles,
+            "HELP" : self._printHelp,
+            "SETTINGS" : self._manageSettings
         }
         if command[0] not in cmd:
             return False 
@@ -137,7 +144,7 @@ class client:
                 print("Connected")
         except OSError:
             pass
-            # print("Cannot connect to host :  ", ip )
+            
 
 #  scan local network and append new active users
     def _scan(self, ip_begin, address_amount ):
@@ -187,7 +194,8 @@ class client:
 
     def _getFile(self, command):
 
-        if self.usersDescriptor["HOST"] is None:
+        if len(self.usersDescriptor["HOST"]) == 0:
+            print("No active users were found. Rescan your network")
             return False;
         
         reqestedFiles = []
@@ -262,7 +270,7 @@ class client:
     
 
     def _downloadFile(self, fileName, ip):
-        fileDownloadPath = "./download/" + fileName
+        fileDownloadPath = filePath + fileName
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         
@@ -301,12 +309,20 @@ class client:
 
     def _getFileList(self,command):
     
-        if self.usersDescriptor["HOST"] is None:
+        if len(self.usersDescriptor["HOST"]) == 0:
+            print("No active users were found. Rescan your network")
             return False;
-        # if user want to display only selected hosts files
+
+        reqestedUsers = []
+        # if user want to get only selected hosts files
         if len(command) > 1:
-            reqestedUsers =  command[1:]
-        else: # display all avaliable hosts files
+                command = command[1:]
+                for usr in command:
+                    usrIdx = self._searchUsr(usr)
+                    if usrIdx == -1:
+                        continue
+                    reqestedUsers.append(self.usersDescriptor["HOST"][usrIdx])
+        else: # get all avaliable hosts files
             reqestedUsers = self.usersDescriptor["HOST"] 
         self.userFiles = {}
 
@@ -333,25 +349,80 @@ class client:
                         fileName += byteRead.decode("utf-8")
                 
             self.sock.close()
-        self._handleCommand("LISTFILES")
+        self._handleCommand("SHOWFILES")
         return True
     
     def _listFiles(self, command):
+
         print("Avaliable files: ")
-        for usr in self.usersDescriptor["HOST"]:
-            print("IP :  {}  NICK : {}".format(usr["IP"],usr['NICK']) )
+        
+        reqestedUsers = []
+        # if user want to display only selected hosts files
+        if len(command) > 1:
+                command = command[1:]
+                for usr in command:
+                    usrIdx = self._searchUsr(usr)
+                    if usrIdx == -1:
+                        continue
+                    reqestedUsers.append(self.usersDescriptor["HOST"][usrIdx])
+        else: # display all avaliable hosts files
+            reqestedUsers = self.usersDescriptor["HOST"]
+
+        for usr in reqestedUsers:
+            if usr["IP"] not in self.userFiles:
+                continue
+            print("IP :  {}  NICK : {}".format(usr["IP"],usr['NICK']) )    
             for f in self.userFiles[usr["IP"]]:
                 print("   -- ", f)
 
     def _printHelp(self, command):
         print("Avalaiable commands : ")
-        print(" --LISTFILES    -- list all files avaliable for download")
         print(" --SCAN         -- scan network for active servers")
-        print(" --GETLIST      -- get file list from active users ")
+        print(" --SHOWFILES    -- list all files avaliable for download")
+        print("     --*--         you can also specify host Ex. SHOWFILES user1") 
+        print(" --GETLIST      -- get file list from all active users ")
+        print("     --*--         you can also specify host Ex. GETLIST user1") 
         print(" --GET * from * -- download files from users.")
         print("     --*--         You can specify files and user Ex.") 
         print("     --*--         get file1 file2 from user1 user2...")
+        print(" --SETTINGS     -- manage your settings ")
+        print("     --*--         /s - show settings")
+        print("     --*--         /c - change  settings")
 
+    def _manageSettings(self,command):
+        parameters = command[1:]
+        
+        config = configparser.ConfigParser()
+        config.read('./settings')
+        try:
+            if "DOWNLOAD" in config:
+                self.userConfig["folder_path"] = config["DOWNLOAD"]["folder_path"]
+                self.userConfig["folder_name"] = config["DOWNLOAD"]["folder_name"]
+        except:
+            print("Config should consist 'path' and 'fname' labels ")
+            raise parseError("Error while parsing settings file")
+            
+        if "init" in parameters:
+            return
+        if '/s' in parameters:
+            print("Download settings: ")
+            for key in self.userConfig:
+                print(key,": ", self.userConfig[key])
+
+        elif '/c' in parameters:
+            print("Type new settings ( Empty line to left old value )")
+            for key in self.userConfig:
+                value = input("{}: ".format(key))
+                
+                if value is "":
+                    continue
+                self.userConfig[key] = value
+            
+            config["DOWNLOAD"] =  self.userConfig
+            with open("settings", "w") as f:
+                config.write(f)
+        else:
+            print("Wrong parameters")
 
 
 def main():
