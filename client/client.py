@@ -393,7 +393,7 @@ class client:
         parameters = command[1:]
         
         config = configparser.ConfigParser()
-        config.read('./settings')
+        config.read('./settings/settings.ini')
         try:
             if "DOWNLOAD" in config:
                 self.userConfig["folder_path"] = config["DOWNLOAD"]["folder_path"]
@@ -419,7 +419,7 @@ class client:
                 self.userConfig[key] = value
             
             config["DOWNLOAD"] =  self.userConfig
-            with open("settings", "w") as f:
+            with open("./settings/settings.ini", "w") as f:
                 config.write(f)
         else:
             print("Wrong parameters")
