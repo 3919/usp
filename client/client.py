@@ -270,7 +270,10 @@ class client:
     
 
     def _downloadFile(self, fileName, ip):
-        fileName_2 = fileName[fileName.rfind('/'):]
+        if fileName.rfind('/') != -1:
+            fileName_2 = fileName[fileName.rfind('/'):]
+        else:
+            fileName_2 = fileName
         fileDownloadPath = self.filePath + fileName_2
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
