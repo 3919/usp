@@ -8,7 +8,7 @@ PORT =  53025
 PONG_XOR_VAL = 0x13371337
 PING_CHECK_VAL_BYTES = b'\x11\x22\x33\x44'
 PING_CHECK_VAL = 0x44332211
-REQUESTS = ['GET kannakamui.png\n', 'GETLIST\n', 'PING \x11\x22\x33\x44\n']
+REQUESTS = ['GET kannakamui.png\n', 'GETLIST\n', 'PING \x11\x22\x33\x44\n', 'GET kanna*\n']
 
 class FileHeader():
     def __init__(self):
@@ -85,6 +85,27 @@ def getTest(s):
     # Checking hash
     print("is ok: ",checkFileHash('out', filehead.sha256_hash))
 
+def getTestAsterix(s):
+    s.sendall(bytes(REQUESTS[3],'utf-8'))
+    
+    filehead = FileHeader()
+    filehead.unpack(recvUntilSize(s,40))
+
+    # Displaying info file header
+    print("Filesize: {} bytes\nsha256: {}".format(
+        filehead.filesize, hex(filehead.sha256_hash)))
+
+    # Saving file
+    f = open('out','wb')
+    i = 0
+    while i < filehead.filesize:
+        data = recvUntilSize(s, filehead.filesize)
+        f.write(data)
+        i+=len(data)
+    f.close()
+    
+    # Checking hash
+    print("is ok: ",checkFileHash('out', filehead.sha256_hash))
 
 def getlistTest(s):
     s.sendall(bytes(REQUESTS[1],'utf-8'))
@@ -133,11 +154,17 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
     
+    print("Sending GET packet test with asterix.")
+    getTestAsterix(s)
+
+    time.sleep(1)
+
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.connect((HOST, PORT))
+    
     print("\n\nStarting timeout test.")
     try:
         timeoutTest(s)
     except:
         print('Exception while timeout test occured')
-
-
 

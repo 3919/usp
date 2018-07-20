@@ -164,8 +164,12 @@ class Session():
                 
     def getResponse(self):
         self.args = self.securePaths(self.args)
-        f = File(self.args[0])
-        f.send(self.socket)
+        print(self.args)
+        print(glob.glob(self.args[0]))
+        for each in glob.glob(self.args[0]):
+            print(each)
+            f = File(each)
+            f.send(self.socket)
 
     def getlistResponse(self):
         self.args = self.securePaths(self.args)
