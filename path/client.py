@@ -37,7 +37,7 @@ class client:
         self._handleCommand("HELP")
         self._handleCommand("SETTINGS init")
         self.filePath = self.userConfig["folder_path"] +\
-                        "/"+self.userConfig["folder_name"] +"/"
+                        self.userConfig["folder_name"] +"/"
         
         while True:
             command = input("Type command : ")
@@ -270,11 +270,7 @@ class client:
     
 
     def _downloadFile(self, fileName, ip):
-        if fileName.rfind('/') != -1:
-            fileName_2 = fileName[fileName.rfind('/'):]
-        else:
-            fileName_2 = fileName
-        fileDownloadPath = self.filePath + fileName_2
+        fileDownloadPath = filePath + fileName
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         
@@ -397,7 +393,7 @@ class client:
         parameters = command[1:]
         
         config = configparser.ConfigParser()
-        config.read('./settings/settings.ini')
+        config.read('./settings')
         try:
             if "DOWNLOAD" in config:
                 self.userConfig["folder_path"] = config["DOWNLOAD"]["folder_path"]
@@ -423,7 +419,7 @@ class client:
                 self.userConfig[key] = value
             
             config["DOWNLOAD"] =  self.userConfig
-            with open("./settings/settings.ini", "w") as f:
+            with open("settings", "w") as f:
                 config.write(f)
         else:
             print("Wrong parameters")
