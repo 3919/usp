@@ -34,7 +34,7 @@ class client:
         self._handleCommand("SETTINGS init")
      
         self.filePath = self.userConfig["folder_path"] + self.userConfig["folder_name"] +"/"
-        print(self.filePath)
+
     def _run(self, command):
         
         self._handleCommand(command)
@@ -194,11 +194,11 @@ class client:
         self._getFile(["GET", "*", command[1], command[2] ] )
 
     def _getFile(self, command):
-        self._loadLastActiveHosts()
+        self._loadLastActiveHosts(command)
         FILES = []
         USERS = []
         FILES = command[1:]
-        print(command)
+        
         for idx, item in enumerate(command):
             if item.upper() == "FROM":
                FILES = command[1 : idx]
@@ -214,10 +214,14 @@ class client:
             return False
         
         if len(USERS) != 1:
-            raise parseError("It can be only one user")
+            print("You have to pass exacly one user");
+            exit(1)
         
         USERS = self._translateAddress(USERS)
-        
+        if len(USERS) != 1:
+            print("None of last active users has such nickname")
+            exit(1)
+
         for file in FILES:
             self._downloadFile(file,USERS[0])
         
@@ -230,9 +234,9 @@ class client:
 
     def _downloadFile(self, fileName, ip):
         if fileName.rfind('/') != -1:
-            fileName_2 = fileName[fileName.rfind('/'):]
+            fileName_2 = fileName[fileName.rfind('/')+1:]
         else:
-            fileName_2 = fileName
+            fileName_2 =  fileName
         fileDownloadPath = self.filePath + fileName_2
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -242,11 +246,11 @@ class client:
         self.sock.sendall(b"GET ")
         self.sock.sendall(bytes(fileName, "utf-8") )
         self.sock.sendall(b'\n')
-        
-        fileSize = struct.unpack("<Q", self.sock.recv(8))[0]
-        if fileSize == 0 :
+        fileSize = self.sock.recv(8)
+        if fileSize == b'':
             print("FILE NOT FOUND")
             return False
+        fileSize = struct.unpack("<Q",fileSize )[0]
 
         sha256Sign = self.sock.recv(1 * 32)
         file = []
@@ -325,11 +329,10 @@ class client:
         if len(command) == 1:
             command.append("*")
 
-        self._loadLastActiveHosts()
+        self._loadLastActiveHosts(command)
         ipTable = self._getFileList(command)
 
         print("Available files: ")
-        print(self.userFiles)
         for ip in ipTable:
             print("IP :  {} ".format( ip ) )    
             for f in self.userFiles[ip]:
@@ -339,10 +342,10 @@ class client:
         print("Available commands : ")
         print(" --SCAN               -- rescan network for active servers")
         print(" --HOSTS              -- show last active servers")
-        print(" --SHOWFILES          -- request server for available files")
+        print(" --SHOWFILES          -- request last active servers for available files")
         print("     --*--               you can also specify host ")
-        print("     --*--               Ex.SHOWFILES user1 user2...") 
-        print(" --GETALL from user   -- get all files from user")
+        print("     --*--               Ex.SHOWFILES [user1/ip_1,user2/ip_2...]") 
+        print(" --GETALL from user   -- get all files from user (inactive)")
         print(" --GET file from user -- download files from users.")
         print("     --*--               You can specify files and user") 
         print("     --*--               It can be only one user")
@@ -396,7 +399,7 @@ class client:
             for user in self.usersDescriptor["HOST"]:
                 f.write("{}={}\n".format(user["IP"],user['NICK']) )  
    
-    def _loadLastActiveHosts(self):
+    def _loadLastActiveHosts(self, command):
         config = configparser.ConfigParser()
         config.read("./settings/hosts.txt")
         print("Last active hosts : ")

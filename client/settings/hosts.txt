@@ -2,4 +2,4 @@
 # The hosts may be not actual
 # Run client with SCAN argument to get currently active servers
 [HOSTS]
-192.168.1.193=windspring
+
