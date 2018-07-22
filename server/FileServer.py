@@ -150,7 +150,7 @@ class Session():
     # Reads to first space and stores request
     # with fetched value
     def fetchRequest(self):
-        data = recvUntilByte(self.socket, b'\n')
+        data = recvUntilByte(self.socket, b'\n', 2)
         data = data.decode('utf-8')
         data = data.split(' ')
         self.request = data[0]
