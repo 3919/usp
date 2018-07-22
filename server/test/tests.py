@@ -63,17 +63,25 @@ def recvUntilSize(socket, size):
 
 def timeoutTest(s):
     s.sendall(bytes(REQUESTS[0][:4],'utf-8'))
-    time.sleep(7)
+    while True:
+        s.recv(1024)
 
 def getTest(s, filename=b'kannakamui.png\n'):
+    print('Asking for {}'.format(filename))
+
+    request = filename
+
+    if filename == b'':
+        filename = b'empty_name'
+
     # make sure packet have its end
-    if not filename.endswith(b'\n'):
-       filename += b'\n' 
+    if not request.endswith(b'\n'):
+       request += b'\n' 
 
-    if not filename.startswith(b'GET '):
-        filename = b'GET ' + filename
+    if not request.startswith(b'GET '):
+        request = b'GET ' + request
 
-    s.sendall(filename)
+    s.sendall(request)
     
     filehead = FileHeader()
     filehead.unpack(recvUntilSize(s,40))
@@ -92,8 +100,31 @@ def getTest(s, filename=b'kannakamui.png\n'):
     f.close()
     
     # Checking hash
-    print("is ok: {}\n".format(checkFileHash('out', filehead.sha256_hash)))
+    print("is ok: {}\n".format(checkFileHash(filename, filehead.sha256_hash)))
 
+def getTestAsterix(s):
+    print('Not implemented yet')
+    return
+    s.sendall(bytes(REQUESTS[3],'utf-8'))
+    
+    filehead = FileHeader()
+    filehead.unpack(recvUntilSize(s,40))
+
+    # Displaying info file header
+    print("Filesize: {} bytes\nsha256: {}".format(
+        filehead.filesize, hex(filehead.sha256_hash)))
+
+    # Saving file
+    f = open('tmp','wb')
+    i = 0
+    while i < filehead.filesize:
+        data = recvUntilSize(s, filehead.filesize)
+        f.write(data)
+        i+=len(data)
+    f.close()
+    
+    # Checking hash
+    print("is ok: ",checkFileHash('tmp', filehead.sha256_hash))
 
 def getlistTest(s):
     s.sendall(bytes(REQUESTS[1],'utf-8'))
@@ -144,11 +175,19 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
     
+    print("Sending GET packet test with asterix.")
+    getTestAsterix(s)
+
+    time.sleep(1)
+
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.connect((HOST, PORT))
+    s.setblocking(True)
+    s.settimeout(1)
+    
     print("\n\nStarting timeout test.")
     try:
         timeoutTest(s)
-    except:
-        print('Exception while timeout test occured')
-
-
+    except socket.timeout:
+        print("Ok, got timed out.")
 

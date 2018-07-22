@@ -38,6 +38,7 @@ class FileServer():
     def listen(self):
         self.socket.listen()
         conn, addr = self.socket.accept()
+        conn.setblocking(True)
         logging.info('Got connection from {}:{}'.format(addr[0],addr[1]))
         session = Session(conn, addr, self.config['main']['shared_path'], self.config['main']['shared_name'])
         job = threading.Thread(target=session.handleSession)
@@ -139,9 +140,9 @@ class Session():
             else:
                 self.calltable[self.request]()
                 logging.info('{} {} request from {}:{}'.format(self.request,self.args,self.addr[0],self.addr[1]))
-            self.socket.close()
+            self.socket.shutdown(socket.SHUT_RDWR)
         except socket.timeout:
-            self.socket.close()
+            self.socket.shutdown(socket.SHUT_RDWR)
             logging.info('Client timed out from {}:{}'.format(self.addr[0],self.addr[1]))
         except ConnectionResetError as e:
             logging.info('{} from {}:{}'.format(e.__str__(),self.addr[0],self.addr[1]))
@@ -171,15 +172,17 @@ class Session():
                 
     def getResponse(self):
         self.args = self.securePaths(self.args)
-        f = File(self.args[0])
-        f.send(self.socket)
+        for each in glob.glob(self.args[0]):
+            f = File(each)
+            f.send(self.socket)
 
     def getlistResponse(self):
         self.args = self.securePaths(self.args)
 
         filelist = glob.glob(os.path.join(self.shared_path,'**'),recursive=True)
         for f in filelist:
-            # TODO if f is directory skip
+            if os.path.isdir(f):
+                continue
             self.socket.sendall(bytes(os.path.relpath(f,self.shared_path),'utf-8'))
             self.socket.sendall(b'\0')
         self.socket.sendall(b'\n')
