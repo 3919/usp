@@ -48,12 +48,12 @@ mkdir "$sharedPath/$sharedFolderName"
 
 # createfile client settings.ini
 touch $cSettingsFile
-printf "[DOWNLOAD]\n" >> $cSettingsFile
+printf "[DOWNLOAD]\n" > $cSettingsFile
 printf "folder_path=$downloadPath \n" >> $cSettingsFile
 printf "folder_name=$downloadFolderName\n" >> $cSettingsFile
 
 # createfile server settings.ini
 touch $sSettingsFile
-printf "[main]\n" >> $sSettingsFile 
+printf "[main]\n" > $sSettingsFile 
 printf "shared_path=$sharedPath/$sharedFolderName\n" >> $sSettingsFile
 printf "shared_name=$NICK\n" >> $sSettingsFile
