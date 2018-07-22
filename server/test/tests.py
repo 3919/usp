@@ -8,7 +8,9 @@ PORT =  53025
 PONG_XOR_VAL = 0x13371337
 PING_CHECK_VAL_BYTES = b'\x11\x22\x33\x44'
 PING_CHECK_VAL = 0x44332211
-REQUESTS = ['GET kannakamui.png\n', 'GETLIST\n', 'PING \x11\x22\x33\x44\n']
+REQUESTS = ['GET testfile\n', 'GETLIST\n', 'PING \x11\x22\x33\x44\n']
+
+serverFileList = []
 
 class FileHeader():
     def __init__(self):
@@ -63,8 +65,15 @@ def timeoutTest(s):
     s.sendall(bytes(REQUESTS[0][:4],'utf-8'))
     time.sleep(7)
 
-def getTest(s):
-    s.sendall(bytes(REQUESTS[0],'utf-8'))
+def getTest(s, filename=b'kannakamui.png\n'):
+    # make sure packet have its end
+    if not filename.endswith(b'\n'):
+       filename += b'\n' 
+
+    if not filename.startswith(b'GET '):
+        filename = b'GET ' + filename
+
+    s.sendall(filename)
     
     filehead = FileHeader()
     filehead.unpack(recvUntilSize(s,40))
@@ -74,7 +83,7 @@ def getTest(s):
         filehead.filesize, hex(filehead.sha256_hash)))
 
     # Saving file
-    f = open('out','wb')
+    f = open(filename,'wb')
     i = 0
     while i < filehead.filesize:
         data = recvUntilSize(s, filehead.filesize)
@@ -83,7 +92,7 @@ def getTest(s):
     f.close()
     
     # Checking hash
-    print("is ok: ",checkFileHash('out', filehead.sha256_hash))
+    print("is ok: {}\n".format(checkFileHash('out', filehead.sha256_hash)))
 
 
 def getlistTest(s):
@@ -91,6 +100,7 @@ def getlistTest(s):
     data = recvUntilByte(s, b'\n')
     data = data.split(b'\0')
     for entry in data:
+        serverFileList.append(entry)
         print(entry.decode('utf-8','ignore'))
     
 def pingTest(s):
@@ -109,19 +119,20 @@ def pingTestSimple(s):
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
     
-    print("Sending GET packet test.")
-    getTest(s)
-
-    time.sleep(1)
-    
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
-    
     print("\n\nSending GETLIST packet test.")
     getlistTest(s)
 
     time.sleep(1)
 
+for filename in serverFileList:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((HOST, PORT))
+        
+        print("Sending GET packet test.")
+        getTest(s, filename)
+
+        time.sleep(1)
+    
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
     

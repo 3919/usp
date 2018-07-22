@@ -8,6 +8,8 @@ import os
 import configparser
 import logging
 
+from sockethelpers import *
+
 REQUESTS = ['GET', 'GETLIST', 'PING']
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 SETTINGS_PATH = os.path.join(BASE_DIR,'settings','settings.ini')
@@ -93,7 +95,8 @@ class File():
                 f.seek(0)
                 sock.sendfile(f)
 
-        # In case of File Not Found only header is sent
+        # In case of exception when accessing requested file
+        # only header is sent with filesize = 0
         # Header is initialized with filesize = 0 so message
         # is ready to be sent
         except FileNotFoundError:
@@ -102,6 +105,10 @@ class File():
 
         except PermissionError:
             logging.info('User requested {}, but got permission denied.'.format(self.filename))
+            self.sendEmpty(sock)
+
+        except IsADirectoryError:
+            logging.info('User requested {}, but its directory, not file.'.format(self.filename))
             self.sendEmpty(sock)
 
     def sendEmpty(self, sock):
@@ -172,6 +179,7 @@ class Session():
 
         filelist = glob.glob(os.path.join(self.shared_path,'**'),recursive=True)
         for f in filelist:
+            # TODO if f is directory skip
             self.socket.sendall(bytes(os.path.relpath(f,self.shared_path),'utf-8'))
             self.socket.sendall(b'\0')
         self.socket.sendall(b'\n')
@@ -179,28 +187,5 @@ class Session():
     def pingResponse(self):
         self.socket.sendall(b'PONG_USP %s\n' % self.shared_name.encode('utf-8'))
 
-def recvUntilByte(socket, untilch):
-    data = b''
-    ch = b''
-    i = 0
-    while True:
-        ch = socket.recv(1)
-
-        if ch == untilch:
-            break
-
-        data += ch
-
-    return data
-
-def recvUntilSize(socket, size):
-    data = b''
-    ch = b''
-    i = 0
-    while i < size:
-        data_ = socket.recv(size)
-        i+=len(data_)
-        data += data_
-
-    return data
-        
+if __name__ == '__main__':
+    print("This is only a module needed by main program.\n Do not run this directly, call main.py instead.")

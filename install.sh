@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "Hello in USP installer "
+echo "USP INSTALLER"
 
 if [ "$EUID" -ne 0 ]
   then echo "WARNING, program requires package python-netifaces."
@@ -34,6 +34,7 @@ cp  ./client/preferences.conf $clientpath
 
 cp  ./server/main.py $serverpath
 cp  ./server/FileServer.py $serverpath
+cp  ./server/sockethelpers.py $serverpath
 
 
 mkdir "$serverpath/logs"
