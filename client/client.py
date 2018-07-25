@@ -33,7 +33,7 @@ class client:
 
         self._handleCommand("SETTINGS init")
      
-        self.filePath = self.userConfig["folder_path"] + self.userConfig["folder_name"] +"/"
+        self.filePath = self.userConfig["folder_path"] + "/" + self.userConfig["folder_name"] +"/"
 
     def _run(self, command):
         
