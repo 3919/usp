@@ -63,3 +63,9 @@ del CLIENT_SETTINGS
 del SERVER_SETTINGS
 del SERVER_LOGS
 
+if sys.platform.system() in ('linux', 'cygwin'):
+    copyfile('../daemonizer/serverdaemonizer.sh', os.path.join(INSTALLATION_PATH,'serverdeamonizer.sh'))
+elif sys.platform.system() == 'win32':
+    copyfile('../daemonizer/serverdaemonizer.exe', os.path.join(INSTALLATION_PATH,'serverdeamonizer.exe'))
+else:
+    print("WARNING: deamonizer for server not supported for your platform / os.")
