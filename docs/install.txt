@@ -1,12 +1,10 @@
 ######################################
 ######################################
 
+Just run installator scirpt and follow
+instruction from there.
 
-Application works with python 3
+To run the software you need python3
 
-Neccessary set of folder and plugins :
-
-1. Folder : ./client/download
-2. Folder : ./server/settings
-3. Folder : ./server/logs
-4. Plug-In : python-netifaces
+For running the client you additionally need
+python-netifaces
