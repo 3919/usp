@@ -2,6 +2,8 @@ import socket
 import struct
 import hashlib
 
+from testlib import TestEngine
+
 HOST = '127.0.0.1'
 PORT =  53025
 PONG_XOR_VAL = 0x13371337
@@ -31,7 +33,7 @@ def unpacksha(sha):
     return s1 | s2 | s3 | s4
 
 def checkFileHash(filename, s1):
-    f = open(filename, 'rb')
+    f = open('tmp', 'rb')
     s2 = unpacksha(f.read())
     return (s1 == s2)
 
@@ -60,125 +62,131 @@ def recvUntilSize(socket, size):
 
     return data
 
-def timeoutTest(s):
-    s.sendall(bytes(REQUESTS[0][:4],'utf-8'))
-    while True:
-        s.recv(1024)
+# This test is poor, i know but recv doesnt throw when is invalid
+# ehh... ill fix this later
+def timeoutTest():
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((HOST, PORT))
+            s.setblocking(True)
+            s.settimeout(0.5)
+            s.sendall(bytes(REQUESTS[0][:4],'utf-8'))
+            while True:
+                s.recv(1)
+                return False
+    except socket.timeout:
+        return True
+    return False
 
-def getTest(s, filename=b'kannakamui.png\n'):
-    print('Asking for {}'.format(filename))
+def getTest(filename=b'kannakamui.png\n'):
+    status = False
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((HOST, PORT))
 
-    request = filename
+        print('Asking for {}'.format(filename))
 
-    if filename == b'':
-        filename = b'empty_name'
+        request = filename
 
-    # make sure packet have its end
-    if not request.endswith(b'\n'):
-       request += b'\n' 
+        if filename == b'':
+            filename = b'empty_name'
 
-    if not request.startswith(b'GET '):
-        request = b'GET ' + request
+        # make sure packet have its end
+        if not request.endswith(b'\n'):
+           request += b'\n' 
 
-    s.sendall(request)
-    
-    filehead = FileHeader()
-    filehead.unpack(recvUntilSize(s,40))
+        if not request.startswith(b'GET '):
+            request = b'GET ' + request
 
-    # Displaying info file header
-    print("Filesize: {} bytes\nsha256: {}".format(
-        filehead.filesize, hex(filehead.sha256_hash)))
+        s.sendall(request)
+        
+        filehead = FileHeader()
+        filehead.unpack(recvUntilSize(s,40))
 
-    # Saving file
-    f = open(filename,'wb')
-    i = 0
-    while i < filehead.filesize:
-        data = recvUntilSize(s, filehead.filesize)
-        f.write(data)
-        i+=len(data)
-    f.close()
-    
-    # Checking hash
-    print("is ok: {}\n".format(checkFileHash(filename, filehead.sha256_hash)))
+        # Displaying info file header
+        print("Filesize: {} bytes\nsha256: {}".format(
+            filehead.filesize, hex(filehead.sha256_hash)))
 
-def getTestAsterix(s):
-    print('Not implemented yet')
-    return
-    s.sendall(bytes(REQUESTS[3],'utf-8'))
-    
-    filehead = FileHeader()
-    filehead.unpack(recvUntilSize(s,40))
+        # Saving file
+        f = open('tmp','wb')
+        i = 0
+        while i < filehead.filesize:
+            data = recvUntilSize(s, filehead.filesize)
+            f.write(data)
+            i+=len(data)
+        f.close()
+        
+        # Checking hash
+        status = checkFileHash(filename, filehead.sha256_hash)
+    return status
 
-    # Displaying info file header
-    print("Filesize: {} bytes\nsha256: {}".format(
-        filehead.filesize, hex(filehead.sha256_hash)))
+def getTestAsterix():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((HOST, PORT))
+        print('Not implemented yet')
+        return False
 
-    # Saving file
-    f = open('tmp','wb')
-    i = 0
-    while i < filehead.filesize:
-        data = recvUntilSize(s, filehead.filesize)
-        f.write(data)
-        i+=len(data)
-    f.close()
-    
-    # Checking hash
-    print("is ok: ",checkFileHash('tmp', filehead.sha256_hash))
+        s.sendall(bytes(REQUESTS[3],'utf-8'))
+        
+        filehead = FileHeader()
+        filehead.unpack(recvUntilSize(s,40))
 
-def getlistTest(s):
-    s.sendall(bytes(REQUESTS[1],'utf-8'))
-    data = recvUntilByte(s, b'\n')
-    data = data.split(b'\0')
-    for entry in data:
-        serverFileList.append(entry)
-        print(entry.decode('utf-8','ignore'))
-    
-def pingTest(s):
-    s.sendall(bytes(REQUESTS[2],'utf-8'))
-    data = recvUntilByte(s, b'\n')
-    data = data.split(b' ')
-    print('MSG: {}'.format(data[0].decode('utf-8')))
-    isOk = ((struct.unpack('L', data[1])[0] ^ PONG_XOR_VAL) == PING_CHECK_VAL)
-    print(isOk)
+        # Displaying info file header
+        print("Filesize: {} bytes\nsha256: {}".format(
+            filehead.filesize, hex(filehead.sha256_hash)))
 
-def pingTestSimple(s):
-    s.sendall(bytes(REQUESTS[2],'utf-8'))
-    data = recvUntilByte(s, b'\n')
-    print('MSG: {}'.format(data.decode('utf-8')))
+        # Saving file
+        f = open('tmp','wb')
+        i = 0
+        while i < filehead.filesize:
+            data = recvUntilSize(s, filehead.filesize)
+            f.write(data)
+            i+=len(data)
+        f.close()
+        
+        # Checking hash
+        status = checkFileHash(filename, filehead.sha256_hash)
+        print("is ok: ", end='')
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
-    
-    print("\n\nSending GETLIST packet test.")
-    getlistTest(s)
-
-for filename in serverFileList:
+def getlistTest():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
         
-        print("Sending GET packet test.")
-        getTest(s, filename)
+        print("\n\nSending GETLIST packet test.")
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
+        s.sendall(bytes(REQUESTS[1],'utf-8'))
+        data = recvUntilByte(s, b'\n')
+        data = data.split(b'\0')
+        for entry in data:
+            serverFileList.append(entry)
+            print(entry.decode('utf-8','ignore'))
+
+    return True
     
-    print("\n\nSending PING packet test.")
-    pingTestSimple(s)
+def pingTest():
+    status = False
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((HOST, PORT))
+        s.sendall(bytes(REQUESTS[2],'utf-8'))
+        data = recvUntilByte(s, b'\n')
+        status = data.decode('utf-8').startswith('PONG_USP')
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
-    
-    print("Sending GET packet test with asterix.")
-    getTestAsterix(s)
+    return status
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
-    s.setblocking(True)
-    s.settimeout(1)
-    
-    print("\n\nStarting timeout test.")
-    try:
-        timeoutTest(s)
-    except socket.timeout:
-        print("Ok, got timed out.")
+def main():
+    te = TestEngine()
 
+    # Some tests
+    te.runTest(getlistTest)
+    for filename in serverFileList:
+        te.runTest(getTest, filename)
+    te.runTest(pingTest)
+    te.runTest(timeoutTest)
+
+    # printing results
+    status = te.getStatus()
+    for key in status:
+        print(key, ': ', status[key])
+
+if __name__ == '__main__':
+    main()
+    exit()
