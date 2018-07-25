@@ -1,5 +1,4 @@
 import socket
-import time
 import struct
 import hashlib
 
@@ -153,8 +152,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     print("\n\nSending GETLIST packet test.")
     getlistTest(s)
 
-    time.sleep(1)
-
 for filename in serverFileList:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
@@ -162,23 +159,17 @@ for filename in serverFileList:
         print("Sending GET packet test.")
         getTest(s, filename)
 
-        time.sleep(1)
-    
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
     
     print("\n\nSending PING packet test.")
     pingTestSimple(s)
 
-    time.sleep(1)
-
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
     
     print("Sending GET packet test with asterix.")
     getTestAsterix(s)
-
-    time.sleep(1)
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
