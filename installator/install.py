@@ -25,15 +25,15 @@ SERVER_PATH = os.path.join(INSTALLATION_PATH, 'server')
 # Client files
 os.makedirs(CLIENT_PATH, exist_ok=True)
 
-copyfile('./client/client.py', os.path.join(CLIENT_PATH,'client.py'))
-copyfile('./client/preferences.conf', os.path.join(CLIENT_PATH,'preferences.conf'))
+copyfile('../client/client.py', os.path.join(CLIENT_PATH,'client.py'))
+copyfile('../client/preferences.conf', os.path.join(CLIENT_PATH,'preferences.conf'))
 
 # Server files
 os.makedirs(SERVER_PATH, exist_ok=True)
 
-copyfile('./server/main.py', os.path.join(SERVER_PATH,'main.py'))
-copyfile('./server/FileServer.py', os.path.join(SERVER_PATH,'FileServer.py'))
-copyfile('./server/sockethelpers.py', os.path.join(SERVER_PATH,'sockethelpers.py'))
+copyfile('../server/main.py', os.path.join(SERVER_PATH,'main.py'))
+copyfile('../server/FileServer.py', os.path.join(SERVER_PATH,'FileServer.py'))
+copyfile('../server/sockethelpers.py', os.path.join(SERVER_PATH,'sockethelpers.py'))
 
 # Creating default ini files
 CLIENT_SETTINGS = os.path.join(CLIENT_PATH, 'settings')
@@ -63,9 +63,9 @@ del CLIENT_SETTINGS
 del SERVER_SETTINGS
 del SERVER_LOGS
 
-if sys.platform.system() in ('linux', 'cygwin'):
-    copyfile('../daemonizer/serverdaemonizer.sh', os.path.join(INSTALLATION_PATH,'serverdeamonizer.sh'))
-elif sys.platform.system() == 'win32':
-    copyfile('../daemonizer/serverdaemonizer.exe', os.path.join(INSTALLATION_PATH,'serverdeamonizer.exe'))
+if sys.platform in ('linux', 'cygwin'):
+    copyfile('../server/daemonizer/serverdaemonizer.sh', os.path.join(SERVER_PATH,'serverdeamonizer.sh'))
+elif sys.platform == 'win32':
+    copyfile('../server/daemonizer/serverdaemonizer.exe', os.path.join(SERVER_PATH,'serverdeamonizer.exe'))
 else:
     print("WARNING: deamonizer for server not supported for your platform / os.")
