@@ -20,7 +20,7 @@ def recvUntilByte(sock, untilch, timeout=0):
             sock.shutdown(socket.SHUT_RDWR)
             raise ClientTimedOut("Clinet has timed out.")
 
-        if data_.__contains__(b'\n'):
+        if b'\n' in data_:
             data += data_.split(b'\n')[0]
             break
 

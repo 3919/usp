@@ -4,6 +4,7 @@ import hashlib
 import struct
 import glob
 import os
+import stat
 
 import configparser
 import logging
@@ -69,6 +70,10 @@ class FileServer():
             msg = 'Error: shared_name@main missing in {}'.format(os.path.join('settings','settings.ini'))
             logging.error(msg)
             raise ConfigError(msg)
+        
+    def close(self):
+        self.socket.shutdown(socket.SHUT_RDWR)
+        self.socket.close()
 
 
 class FileHeader():
@@ -165,7 +170,7 @@ class Session():
             # path traversal attempt ?
             # alternate way:
             # ''.join('/asdf/../qwer'.split('..')).replace('//','/')
-            if path.__contains__('..'):
+            if '..' in path:
                 return None
 
         return paths
