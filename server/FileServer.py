@@ -31,6 +31,7 @@ class ConfigError(Exception):
 class FileServer():
     def __init__(self, port = 53025, host = ''):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)    
         self.socket.bind((host, port))
         self.config = configparser.ConfigParser()
         self.config.read(SETTINGS_PATH)
