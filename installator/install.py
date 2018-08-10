@@ -1,7 +1,8 @@
 import os
 import sys
-from instalib import fetchArg
+from instalib import fetchArg, CompilationException
 from shutil import copyfile
+from subprocess import call as subprocessCall
 
 print("USP INSTALLER")
 
@@ -63,9 +64,15 @@ del CLIENT_SETTINGS
 del SERVER_SETTINGS
 del SERVER_LOGS
 
+daemonizer_dir = os.path.join('..','server','daemonizer')
+
 if sys.platform in ('linux', 'cygwin'):
-    copyfile('../server/daemonizer/serverdaemonizer.sh', os.path.join(SERVER_PATH,'serverdeamonizer.sh'))
+    copyfile(os.path.join(daemonizer_dir, 'serverdaemonizer.sh'), os.path.join(SERVER_PATH,'serverdeamonizer.sh'))
 elif sys.platform == 'win32':
-    copyfile('../server/daemonizer/serverdaemonizer.exe', os.path.join(SERVER_PATH,'serverdeamonizer.exe'))
+    print("Comapiling daemonizer . . . ", flush=True)
+    if subprocessCall(['make'], cwd=daemonizer_dir) != 0:
+        raise CompilationException('Failed to compile server daemonizer from source!')
+    print("Compilation successed")
+    copyfile(os.path.join(daemonizer_dir, 'serverdaemonizer.exe'), os.path.join(SERVER_PATH, 'serverdeamonizer.exe'))
 else:
     print("WARNING: deamonizer for server not supported for your platform / os.")

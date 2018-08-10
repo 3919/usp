@@ -10,3 +10,7 @@ def fetchArg(msg, errmsg, verify):
         isOk = verify(arg)
     
     return arg
+
+class CompilationException(Exception):
+    pass
+
