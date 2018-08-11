@@ -36,7 +36,7 @@ class client:
 
         self._handleCommand("SETTINGS init")
      
-        self.filePath = self.userConfig["folder_path"] + "/" + self.userConfig["folder_name"] +"/"
+        self.filePath = self.userConfig["folder_path"]
 
     def _run(self, command):
         
@@ -385,7 +385,6 @@ class client:
         try:
             if "DOWNLOAD" in config:
                 self.userConfig["folder_path"] = config["DOWNLOAD"]["folder_path"]
-                self.userConfig["folder_name"] = config["DOWNLOAD"]["folder_name"]
         except:
             print("Config should consist 'path' and 'fname' labels ")
             raise parseError("Error while parsing settings file")
