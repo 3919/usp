@@ -79,16 +79,24 @@ class client:
                 if idx == -1:
                     idx = len(line)                
                 configFile[i] = line[:idx]
+            availabledevices = netifaces.interfaces()
 
             #  append device prefered by user saved in file
             preferredDevices = list( filter(None,configFile) )
             netmask = ''
             ip_addr = ''
 
-    
+            # stupid translation on windows when user specify preferredDevices
+            if os.name == "nt":
+                if len(preferredDevices) != 0:
+                    iface_names = self.get_connection_names_from_reg(availabledevices)
+                    for i, name in enumerate(preferredDevices):
+                        for j,iface in enumerate(iface_names):
+                            if iface == name:
+                                preferredDevices[i] = availabledevices[j]
             # if user don't have config file, let him choose devices  
             if len(preferredDevices) == 0:
-                availabledevices = netifaces.interfaces()
+                
                 print("List of avaliable devices: ")
                 for key, value in enumerate(availabledevices):
                     if os.name == "nt":
@@ -441,7 +449,18 @@ class client:
                 deviceName = wr.QueryValueEx(reg_subkey, 'Name')[0]
                 return str(deviceName)
             except:
-                return "( Unknown )"             
+                return "( Unknown )"
+        def get_connection_names_from_reg(self, iface_guids):
+            iface_names = ['(unknown)' for i in range(len(iface_guids))]
+            reg = wr.ConnectRegistry(None, wr.HKEY_LOCAL_MACHINE)
+            reg_key = wr.OpenKey(reg, r'SYSTEM\CurrentControlSet\Control\Network\{4d36e972-e325-11ce-bfc1-08002be10318}')
+            for i in range(len(iface_guids)):
+                try:
+                    reg_subkey = wr.OpenKey(reg_key, iface_guids[i] + r'\Connection')
+                    iface_names[i] = wr.QueryValueEx(reg_subkey, 'Name')[0]
+                except FileNotFoundError:
+                    pass
+            return iface_names         
 
 def main():
     instance = client()
