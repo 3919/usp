@@ -260,15 +260,24 @@ class client:
         with open(fileDownloadPath, "wb" )  as f:
             while dataLeft > 0:
                 data =  self.sock.recv(dataLeft)
+                if len(data) == 0:
+                    break
                 file.extend(data)
                 dataLeft -= len(data)
+                dataTaken  = len(file) 
+                hashAmount = int((dataTaken/fileSize)*70)
+                hashStr = "#"*hashAmount
+                print( "Progress: (" + str( dataTaken ) + "/" + str(fileSize) +") " + hashStr + "\r" , end='', flush=True)
+                time.sleep(0.8)
 
             file = bytearray(file)                
             if hashlib.sha256(file).digest() != sha256Sign :
                 print ("SHA256 Incorrect")
                 return False      
-
-            f.write(bytearray(file) )
+            else:
+                print( "\033[2K", sep='', end='', flush=True)
+                print("File Dowloaded")
+            f.write( bytearray(file) )
 
         self.sock.close()
         return True
@@ -282,7 +291,7 @@ class client:
             else:
                 usrIdx = self._searchUsr(ip)
                 if usrIdx != -1:
-                    ipTable.append(self.usersDescriptor["HOST"][usrIdx]["IP"])
+                    ipTable.append( self.usersDescriptor["HOST"][usrIdx]["IP"] )
 
         return ipTable;
 
