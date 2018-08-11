@@ -1,6 +1,6 @@
 
 import socket,threading
-import sys
+import sys, os
 import time
 import netifaces
 import random
@@ -8,6 +8,9 @@ import struct
 import hashlib
 import configparser 
 import re
+
+if os.name == "nt":
+    import winreg as wr
 
 class SocketError(Exception):
     pass
@@ -88,7 +91,10 @@ class client:
                 availabledevices = netifaces.interfaces()
                 print("List of avaliable devices: ")
                 for key, value in enumerate(availabledevices):
-                    print("{} {}".format(key,value))
+                    if os.name == "nt":
+                        print("{} {}".format(key,self._get_connection_name_from_reg(value)))
+                    else: 
+                        print("{} {}".format(key,value))
                 
                 devId = int(input("Choose device: "))
                 preferredDevices.append(availabledevices[devId])
@@ -267,7 +273,7 @@ class client:
                 dataTaken  = len(file) 
                 hashAmount = int((dataTaken/fileSize)*70)
                 hashStr = "#"*hashAmount
-                print( "Progress: (" + str( dataTaken ) + "/" + str(fileSize) +") " + hashStr + "\r" , end='', flush=True)
+                print( "Progress: (" + str( dataTaken ) + "/" + str(fileSize) +") " + hashStr , end='\r', flush=True)
                 time.sleep(0.8)
 
             file = bytearray(file)                
@@ -275,8 +281,7 @@ class client:
                 print ("SHA256 Incorrect")
                 return False      
             else:
-                print( "\033[2K", sep='', end='', flush=True)
-                print("File Dowloaded")
+                print("\nFile Dowloaded")
             f.write( bytearray(file) )
 
         self.sock.close()
@@ -427,6 +432,16 @@ class client:
         for user in self.usersDescriptor["HOST"]:
             print("IP :  {}  NICK : {}".format(user["IP"],user['NICK']) )  
 
+    if os.name == "nt":
+        def _get_connection_name_from_reg(self, regValue):
+            reg = wr.ConnectRegistry(None, wr.HKEY_LOCAL_MACHINE)
+            reg_key = wr.OpenKey(reg, r'SYSTEM\CurrentControlSet\Control\Network\{4d36e972-e325-11ce-bfc1-08002be10318}')
+            try:
+                reg_subkey = wr.OpenKey(reg_key, regValue + r'\Connection')
+                deviceName = wr.QueryValueEx(reg_subkey, 'Name')[0]
+                return str(deviceName)
+            except:
+                return "( Unknown )"             
 
 def main():
     instance = client()
