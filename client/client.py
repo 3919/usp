@@ -281,7 +281,8 @@ class client:
                 dataTaken  = len(file) 
                 hashAmount = int((dataTaken/fileSize)*70)
                 hashStr = "#"*hashAmount
-                print( "Progress: (" + str( dataTaken ) + "/" + str(fileSize) +") " + hashStr , end='\r', flush=True)
+                spaceStr = " "*(70-hashAmount)
+                print( "Progress: (" + str( dataTaken ) + "/" + str(fileSize) +") |" + hashStr + spaceStr + "| "+ str(int(dataTaken/fileSize)*100) + "%" , end='\r', flush = True)
                 time.sleep(0.8)
 
             file = bytearray(file)                
