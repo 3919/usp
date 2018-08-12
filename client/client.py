@@ -340,8 +340,8 @@ class client:
                     if byteRead == b'\0':
                         if host not in self.userFiles:
                             self.userFiles.update({ host : [ ] })
-                        else:
-                            self.userFiles[host].append(fileName)  
+
+                        self.userFiles[host].append(fileName)  
                         fileName = ""
                     else:
                         fileName += byteRead.decode("utf-8")
