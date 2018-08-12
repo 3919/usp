@@ -52,8 +52,6 @@ SERVER_SETTINGS = os.path.join(SERVER_SETTINGS, 'settings.ini')
 with open(CLIENT_SETTINGS, 'w') as f:
     f.write('[DOWNLOAD]\n')
     f.write('folder_path={} \n'.format(DOWNLOAD_DIR_PATH))
-    # Mocking dir name for now
-    f.write('folder_name={} \n'.format('download'))
 
 with open(SERVER_SETTINGS, 'w') as f:
     f.write('[main]\n')
