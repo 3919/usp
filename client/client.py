@@ -251,7 +251,7 @@ class client:
             fileName_2 = fileName[fileName.rfind('/')+1:]
         else:
             fileName_2 =  fileName
-        fileDownloadPath = self.filePath + fileName_2
+        fileDownloadPath = self.filePath + "/" + fileName_2
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         
@@ -269,29 +269,34 @@ class client:
         sha256Sign = self.sock.recv(1 * 32)
         file = []
         dataLeft = fileSize
-
+        dataRead = 0;
         print("Downloadin file: {}, from :{} \n".format(fileDownloadPath,ip) )
-        with open(fileDownloadPath, "wb" )  as f:
+        with open(fileDownloadPath, "wb+" )  as f:
             while dataLeft > 0:
                 data =  self.sock.recv(dataLeft)
                 if len(data) == 0:
                     break
-                file.extend(data)
+                f.write( bytearray(data) )
                 dataLeft -= len(data)
-                dataTaken  = len(file) 
-                hashAmount = int((dataTaken/fileSize)*70)
+                dataRead  += len(data) 
+                hashAmount = int((dataRead/fileSize)*70)
                 hashStr = "#"*hashAmount
                 spaceStr = " "*(70-hashAmount)
-                print( "Progress: (" + str( dataTaken ) + "/" + str(fileSize) +") |" + hashStr + spaceStr + "| "+ str(int(dataTaken/fileSize)*100) + "%" , end='\r', flush = True)
+                print( "Progress: (" + str( dataRead ) + "/" + str(fileSize) +") |" + hashStr + spaceStr + "| "+ str(int(dataRead/fileSize)*100) + "%" , end='\r', flush = True)
                 time.sleep(0.8)
 
-            file = bytearray(file)                
-            if hashlib.sha256(file).digest() != sha256Sign :
-                print ("SHA256 Incorrect")
+            
+            print("\nValidating downloaded file...")
+            f.seek(0,0)
+            file.extend(f.read() )              
+            if hashlib.sha256(bytes(file) ).digest() != sha256Sign :
+                print ("\nSHA256 Incorrect\nRemoving file : ", fileDownloadPath)
+                os.remove( fileDownloadPath )
                 return False      
             else:
                 print("\nFile Dowloaded")
-            f.write( bytearray(file) )
+
+            
 
         self.sock.close()
         return True
