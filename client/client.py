@@ -38,6 +38,11 @@ class client:
      
         self.filePath = self.userConfig["folder_path"]
 
+        # this variables hold info about last ratio and ratio label Kb/Mb ...
+        self.donwloadRatio = 0;
+        self.downloadRatioLabel = "Kb/s"
+        self.isDownloadInProgress = False
+        self.dataLeft = 0
     def _run(self, command):
         
         self._handleCommand(command)
@@ -261,6 +266,7 @@ class client:
         self.sock.sendall(bytes(fileName, "utf-8") )
         self.sock.sendall(b'\n')
         fileSize = self.sock.recv(8)
+
         if fileSize == b'':
             print("FILE NOT FOUND")
             return False
@@ -268,24 +274,30 @@ class client:
 
         sha256Sign = self.sock.recv(1 * 32)
         file = []
-        dataLeft = fileSize
+        self.dataLeft = fileSize
         dataRead = 0;
+        self.isDownloadInProgress = True;
+        speedRatioThread = threading.Thread(target=self.calcluateSpeedRatio, args=(fileSize,) )
+        speedRatioThread.start()
+
         print("Downloadin file: {}, from :{} \n".format(fileDownloadPath,ip) )
         with open(fileDownloadPath, "wb+" )  as f:
-            while dataLeft > 0:
-                data =  self.sock.recv(dataLeft)
+            while self.dataLeft > 0:
+                data =  self.sock.recv(self.dataLeft)
                 if len(data) == 0:
                     break
                 f.write( bytearray(data) )
-                dataLeft -= len(data)
+                self.dataLeft -= len(data)
                 dataRead  += len(data) 
                 hashAmount = int((dataRead/fileSize)*70)
                 hashStr = "#"*hashAmount
                 spaceStr = " "*(70-hashAmount)
-                print( "Progress: (" + str( dataRead ) + "/" + str(fileSize) +") |" + hashStr + spaceStr + "| "+ str(int(dataRead/fileSize)*100) + "%" , end='\r', flush = True)
-                time.sleep(0.8)
+                print( "Progress: (" ,  dataRead  , "/" , fileSize ,")", "{0:.2f}".format(self.donwloadRatio), self.downloadRatioLabel+ " |" + hashStr + spaceStr + "|" + str(int((dataRead/fileSize)*100)) + "%          " , end='\r', flush = True)
+                # time.sleep(1)
 
-            
+
+            self.isDownloadInProgress = False;
+            speedRatioThread.join()
             print("\nValidating downloaded file...")
             f.seek(0,0)
             file.extend(f.read() )              
@@ -296,10 +308,24 @@ class client:
             else:
                 print("\nFile Dowloaded")
 
-            
-
         self.sock.close()
         return True
+
+    def calcluateSpeedRatio(self, fileSize):
+        lastDataSizeDiff = fileSize
+        dataSizeDiff = 0
+
+        while self.isDownloadInProgress :
+            dataSizeDiff = lastDataSizeDiff - self.dataLeft;
+            lastDataSizeDiff = self.dataLeft
+            if dataSizeDiff > 1048576: # 1024**2
+                self.donwloadRatio = dataSizeDiff / 1048576
+                self.downloadRatioLabel = "Mb/s"
+            else:
+                self.donwloadRatio = dataSizeDiff / 1024
+                self.downloadRatioLabel = "Kb/s"
+
+            time.sleep(1)
 
     def _translateAddress(self, users):
         ipTable = []
