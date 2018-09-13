@@ -1,5 +1,5 @@
 # This file conatins all previously found hosts
-# The hosts may be not actual
+# The hosts may be not current
 # Run client with SCAN argument to get currently active servers
 [HOSTS]
 
