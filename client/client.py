@@ -291,7 +291,8 @@ class client:
                 hashAmount = int((dataRead/fileSize)*70)
                 hashStr = "#"*hashAmount
                 spaceStr = " "*(70-hashAmount)
-                print( "Progress: (" ,  dataRead  , "/" , fileSize ,")", "{0:.2f}".format(self.downloadRatio), self.downloadRatioLabel+ " |" + hashStr + spaceStr + "|" + str(int((dataRead/fileSize)*100)) + "%          " , end='\r', flush = True)
+                print( "Progress: ({}/{}) {:.2f} {} | {} | {}%".format(dataRead, fileSize, self.downloadRatio,
+                  self.downloadRatioLabel, hashStr + spaceStr, str(int((dataRead/fileSize)*100))), end='\r', flush = True)
                 # time.sleep(1)
 
 
