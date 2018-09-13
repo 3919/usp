@@ -1,4 +1,3 @@
-
 import socket,threading
 import sys, os
 import time
@@ -39,7 +38,7 @@ class client:
         self.filePath = self.userConfig["folder_path"]
 
         # this variables hold info about last ratio and ratio label Kb/Mb ...
-        self.donwloadRatio = 0;
+        self.downloadRatio = 0;
         self.downloadRatioLabel = "Kb/s"
         self.isDownloadInProgress = False
         self.dataLeft = 0
@@ -292,7 +291,7 @@ class client:
                 hashAmount = int((dataRead/fileSize)*70)
                 hashStr = "#"*hashAmount
                 spaceStr = " "*(70-hashAmount)
-                print( "Progress: (" ,  dataRead  , "/" , fileSize ,")", "{0:.2f}".format(self.donwloadRatio), self.downloadRatioLabel+ " |" + hashStr + spaceStr + "|" + str(int((dataRead/fileSize)*100)) + "%          " , end='\r', flush = True)
+                print( "Progress: (" ,  dataRead  , "/" , fileSize ,")", "{0:.2f}".format(self.downloadRatio), self.downloadRatioLabel+ " |" + hashStr + spaceStr + "|" + str(int((dataRead/fileSize)*100)) + "%          " , end='\r', flush = True)
                 # time.sleep(1)
 
 
@@ -319,10 +318,10 @@ class client:
             dataSizeDiff = lastDataSizeDiff - self.dataLeft;
             lastDataSizeDiff = self.dataLeft
             if dataSizeDiff > 1048576: # 1024**2
-                self.donwloadRatio = dataSizeDiff / 1048576
+                self.downloadRatio = dataSizeDiff / 1048576
                 self.downloadRatioLabel = "Mb/s"
             else:
-                self.donwloadRatio = dataSizeDiff / 1024
+                self.downloadRatio = dataSizeDiff / 1024
                 self.downloadRatioLabel = "Kb/s"
 
             time.sleep(1)
