@@ -280,33 +280,43 @@ class client:
         speedRatioThread.start()
 
         print("Downloadin file: {}, from :{} \n".format(fileDownloadPath,ip) )
-        with open(fileDownloadPath, "wb+" )  as f:
-            while self.dataLeft > 0:
-                data =  self.sock.recv(self.dataLeft)
-                if len(data) == 0:
-                    break
-                f.write( bytearray(data) )
-                self.dataLeft -= len(data)
-                dataRead  += len(data) 
-                hashAmount = int((dataRead/fileSize)*70)
-                hashStr = "#"*hashAmount
-                spaceStr = " "*(70-hashAmount)
-                print( "Progress: ({}/{}) {:.2f} {} | {} | {}%".format(dataRead, fileSize, self.downloadRatio,
-                  self.downloadRatioLabel, hashStr + spaceStr, str(int((dataRead/fileSize)*100))), end='\r', flush = True)
-                # time.sleep(1)
+
+        # Loop until download file name is correct for local file system
+        while(True):
+            try:
+                f = open(fileDownloadPath, "wb+")
+                break # filename is OK, break from loop
+            except OSError as e:
+                print("Error ! Local file system prohibits such files names.")
+                newFileName = input("Please supply alternate name: ")
+                fileDownloadPath = fileDownloadPath[:fileDownloadPath.rfind('/')+1] + newFileName
+
+        while self.dataLeft > 0:
+            data =  self.sock.recv(self.dataLeft)
+            if len(data) == 0:
+                break
+            f.write( bytearray(data) )
+            self.dataLeft -= len(data)
+            dataRead  += len(data) 
+            hashAmount = int((dataRead/fileSize)*70)
+            hashStr = "#"*hashAmount
+            spaceStr = " "*(70-hashAmount)
+            print( "Progress: ({}/{}) {:.2f} {} | {} | {}%".format(dataRead, fileSize, self.downloadRatio,
+              self.downloadRatioLabel, hashStr + spaceStr, str(int((dataRead/fileSize)*100))), end='\r', flush = True)
+            # time.sleep(1)
 
 
-            self.isDownloadInProgress = False;
-            speedRatioThread.join()
-            print("\nValidating downloaded file...")
-            f.seek(0,0)
-            file.extend(f.read() )              
-            if hashlib.sha256(bytes(file) ).digest() != sha256Sign :
-                print ("\nSHA256 Incorrect\nRemoving file : ", fileDownloadPath)
-                os.remove( fileDownloadPath )
-                return False      
-            else:
-                print("\nFile Dowloaded")
+        self.isDownloadInProgress = False;
+        speedRatioThread.join()
+        print("\nValidating downloaded file...")
+        f.seek(0,0)
+        file.extend(f.read() )              
+        if hashlib.sha256(bytes(file) ).digest() != sha256Sign :
+            print ("\nSHA256 Incorrect\nRemoving file : ", fileDownloadPath)
+            os.remove( fileDownloadPath )
+            return False      
+        else:
+            print("\nFile Dowloaded")
 
         self.sock.close()
         return True
