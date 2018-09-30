@@ -8,12 +8,20 @@ import hashlib
 import configparser 
 import re
 
+INDEX_FILE_PATH = "user.idx"
+
+
+# global flags
+HOSTSLOADED = False
+
 if os.name == "nt":
     import winreg as wr
 
 class SocketError(Exception):
     pass
 class parseError(Exception):
+    pass
+class USPSyntaxError(Exception):
     pass
 class client:
     def __init__(self):
@@ -56,11 +64,12 @@ class client:
         cmd = {
             "SCAN" : self._scanNet, 
             "GET" : self._getFile,
-            "SHOWFILES" : self._listFiles,
+            "SHOWFILES" : self._listFilesAndIndex,
             "HELP" : self._printHelp,
             "SETTINGS" : self._manageSettings,
             "HOSTS" : self._loadLastActiveHosts,
-            "GETALL" : self._getAllFiles
+            "GETALL" : self._getAllFiles,
+            "GETID" : self._getFileByID
         }
 
         if command[0] not in cmd:
@@ -212,7 +221,7 @@ class client:
         self._getFile(["GET", "*", command[1], command[2] ] )
 
     def _getFile(self, command):
-        self._loadLastActiveHosts(command)
+        self._loadLastActiveHosts()
         FILES = []
         USERS = []
         FILES = command[1:]
@@ -242,7 +251,49 @@ class client:
 
         for file in FILES:
             self._downloadFile(file,USERS[0])
-        
+
+    # TODO
+    # CAUTION !!
+    # There is badly written code below, space escape in filename
+    # is handled very badly!
+    def _getFileByID(self, command):
+        if len(command) != 4:
+            raise USPSyntaxError('Bad syntax! Expected form: getid <fileid> from <username>')
+
+        if command[2].lower() != 'from':
+            raise USPSyntaxError(f'Expected keyword \'from\' after filename, got \'{command[2]}\'')
+            
+        try:
+            fileid = int(command[1])
+        except ValueError:
+            raise USPSyntaxError('Bad syntax! Expected number in place of fileid')
+
+        username = command[3]
+
+        self._loadLastActiveHosts()
+
+        with open(INDEX_FILE_PATH, 'r') as idxFile:
+            for line in idxFile:
+                line = line.split(':')
+                if self._getUsernameByIP(line[0]) == username:
+                    # TODO THIS WILL SPLIT FILES WITH ESCAPED SPACES WRONG !!!
+                    # to be changed
+                    try:
+                        # Modify current command so that instead of file id 
+                        # there will be filename.
+                        # After that it is ready to be passed to self._getFile
+                        command[1] = line[1].split(' ')[fileid]
+                        command[0] = 'get'
+                    except IndexError:
+                        print(f'There is no file with given id. ({fileid})')
+                        exit(2)
+
+                    self._getFile(command)
+                    return 0
+
+        print(f'User \'{username}\' is unknown.')
+        exit(1)
+
     def _searchUsr(self, usr):
         for i in range(len(self.usersDescriptor["HOST"])):
             if usr == self.usersDescriptor["HOST"][i]["NICK"]:
@@ -388,35 +439,54 @@ class client:
                 raise SocketError(errMessage)
         return ipTable
     
-    def _listFiles(self, command):
+    def _listFilesAndIndex(self, command):
         
         if len(command) == 1:
             command.append("*")
 
-        self._loadLastActiveHosts(command)
+        self._loadLastActiveHosts()
         ipTable = self._getFileList(command)
+
+        idxFile = open(INDEX_FILE_PATH, 'w')
 
         print("Available files: ")
         for ip in ipTable:
             print("IP :  {} ".format( ip ) )    
-            for f in self.userFiles[ip]:
-                print("   -- ", f)
+            print(f"\tID -- FILENAME")
+
+            # starts file list for given user
+            idxFile.write(ip)
+            idxFile.write(":")
+            for id,filename in enumerate(self.userFiles[ip]):
+                print(f"\t {id} -- {filename}")
+
+                # Adds file to index file for given user
+                # each file is separated with space
+                # If filename constains space it must be escaped
+                idxFile.write(filename.replace(' ','\\ '))
+                idxFile.write(' ')
+
+            # New line before next user
+            idxFile.write('\n')
+
+        idxFile.close()
 
     def _printHelp(self, command):
         print("Available commands : ")
-        print(" --SCAN               -- rescan network for active servers")
-        print(" --HOSTS              -- show last active servers")
-        print(" --SHOWFILES          -- request last active servers for available files")
-        print("     --*--               you can also specify host ")
-        print("     --*--               Ex.SHOWFILES [user1/ip_1,user2/ip_2...]") 
-        print(" --GETALL from user   -- get all files from user (inactive)")
-        print(" --GET file from user -- download files from users.")
-        print("     --*--               You can specify files and user") 
-        print("     --*--               It can be only one user")
-        print("     --*--               Ex.get file1 file2 from user1")
-        print(" --SETTINGS              -- manage your settings ")
-        print("     --*--               /s - show settings")
-        print("     --*--               /c - change  settings")
+        print(" --SCAN                 -- rescan network for active servers")
+        print(" --HOSTS                -- show last active servers")
+        print(" --SHOWFILES            -- request last active servers for available files")
+        print("     --*--                 you can also specify host ")
+        print("     --*--                 Ex.SHOWFILES [user1/ip_1,user2/ip_2...]") 
+        print(" --GETALL from user     -- get all files from user (inactive)")
+        print(" --GET file from user   -- download files from users.")
+        print(" --GETID file from user -- download file by its id.")
+        print("     --*--                 You can specify files and user") 
+        print("     --*--                 It can be only one user")
+        print("     --*--                 Ex.get file1 file2 from user1")
+        print(" --SETTINGS                -- manage your settings ")
+        print("     --*--                 /s - show settings")
+        print("     --*--                 /c - change  settings")
         exit(1)
 
     def _manageSettings(self,command):
@@ -462,7 +532,12 @@ class client:
             for user in self.usersDescriptor["HOST"]:
                 f.write("{}={}\n".format(user["IP"],user['NICK']) )  
    
-    def _loadLastActiveHosts(self, command):
+    def _loadLastActiveHosts(self, force=False):
+        global HOSTSLOADED
+
+        if HOSTSLOADED == True and force == False:
+            return
+
         config = configparser.ConfigParser()
         config.read("./settings/hosts.txt")
         print("Last active hosts : ")
@@ -473,6 +548,8 @@ class client:
                     print("IP :  {}  NICK : {}".format(key ,config["HOSTS"][key] ) )  
         except:
             raise parseError("Error while parsing host file")
+
+        HOSTSLOADED = True
         
         
 
@@ -480,6 +557,16 @@ class client:
         print("Available hosts: ")
         for user in self.usersDescriptor["HOST"]:
             print("IP :  {}  NICK : {}".format(user["IP"],user['NICK']) )  
+
+    def _getUsernameByIP(self, ip):
+        self._loadLastActiveHosts()
+
+        hosts = self.usersDescriptor['HOST']
+        for host in hosts:
+            if ip == host['IP']:
+                return host['NICK']
+
+        return None
 
     if os.name == "nt":
         def _get_connection_name_from_reg(self, regValue):
