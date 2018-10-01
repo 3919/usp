@@ -183,7 +183,7 @@ class client:
             t.start();
             # get new ip addres
             ip_begin+=1
-        # 
+
         for i in range(len(threads)):
             threads[i].join()
         
@@ -252,10 +252,6 @@ class client:
         for file in FILES:
             self._downloadFile(file,USERS[0])
 
-    # TODO
-    # CAUTION !!
-    # There is badly written code below, space escape in filename
-    # is handled very badly!
     def _getFileByID(self, command):
         if len(command) != 4:
             raise USPSyntaxError('Bad syntax! Expected form: getid <fileid> from <username>')
@@ -276,13 +272,12 @@ class client:
             for line in idxFile:
                 line = line.split(':')
                 if self._getUsernameByIP(line[0]) == username:
-                    # TODO THIS WILL SPLIT FILES WITH ESCAPED SPACES WRONG !!!
-                    # to be changed
                     try:
                         # Modify current command so that instead of file id 
                         # there will be filename.
                         # After that it is ready to be passed to self._getFile
-                        command[1] = line[1].split(' ')[fileid]
+                        # Also restores escaped space if any
+                        command[1] = line[1].split(' ')[fileid].replace('\x00',' ')
                         command[0] = 'get'
                     except IndexError:
                         print(f'There is no file with given id. ({fileid})')
@@ -463,7 +458,7 @@ class client:
                 # Adds file to index file for given user
                 # each file is separated with space
                 # If filename constains space it must be escaped
-                idxFile.write(filename.replace(' ','\\ '))
+                idxFile.write(filename.replace(' ','\x00'))
                 idxFile.write(' ')
 
             # New line before next user
