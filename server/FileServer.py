@@ -142,7 +142,7 @@ class Session():
         try:
             self.fetchRequest()
             if self.request not in REQUESTS:
-                logging.info('Unknown request from {}:{}'.format(self.addr[0],self.addr[1]))
+                logging.info('Unknown request {} from {}:{}'.format(self.request,self.addr[0],self.addr[1]))
             else:
                 self.calltable[self.request]()
                 logging.info('{} {} request from {}:{}'.format(self.request,self.args,self.addr[0],self.addr[1]))
@@ -158,9 +158,17 @@ class Session():
     def fetchRequest(self):
         data = recvUntilByte(self.socket, b'\n', 2)
         data = data.decode('utf-8')
-        data = data.split(' ')
-        self.request = data[0]
-        self.args = data[1:]
+        idxSplit = data.find(' ')
+
+        # space not found, so no args
+        if idxSplit == -1:
+            self.request = data
+            self.args = None
+            return
+            
+        # args ahead
+        self.request = data[:idxSplit]
+        self.args = data[idxSplit+1:]
     
     # Checks requets for path traversal
     def securePaths(self, paths):
@@ -177,14 +185,12 @@ class Session():
         return paths
                 
     def getResponse(self):
-        self.args = self.securePaths(self.args)
+        self.args = self.securePaths([self.args])
         for each in glob.glob(self.args[0]):
             f = File(each)
             f.send(self.socket)
 
     def getlistResponse(self):
-        self.args = self.securePaths(self.args)
-
         filelist = glob.glob(os.path.join(self.shared_path,'**'),recursive=True)
         for f in filelist:
             if os.path.isdir(f):
