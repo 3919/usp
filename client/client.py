@@ -26,15 +26,16 @@ class USPSyntaxError(Exception):
 class client:
     def __init__(self):
         
-        PORT = 53025   
+      
         
         # main socket   
         self.sock  =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # keep information about Available hosts and port
         self.usersDescriptor = {
             "HOST" :[],    
-            "PORT" : PORT
+            "PORT" : 53025
         }
+
         self.filePath = ""
         # keep user config to download files
         self.userConfig ={}
@@ -42,7 +43,8 @@ class client:
         self.userFiles = {}
 
         self._handleCommand("SETTINGS init")
-     
+        self._handleCommand("HOSTS")
+        
         self.filePath = self.userConfig["folder_path"]
 
         # this variables hold info about last ratio and ratio label Kb/Mb ...
@@ -165,7 +167,7 @@ class client:
             TCPsock.connect((ip, self.usersDescriptor["PORT"] ))
             nick = self._authenticateUser(TCPsock)
             if nick != None:
-                self.usersDescriptor["HOST"].append({"IP" : ip, "NICK" : nick })
+                self.usersDescriptor["HOST"].append({"IP" : ip, "NICK" : nick, "FILES" : [] })
                 print("Connected")
         except OSError:
             pass
@@ -218,11 +220,19 @@ class client:
         #  GET file1, file2.. from *                        -- get some files from all users
         #  GET file1, file2.. from user1 user1 user2.. -- get some files from some users
     def _getAllFiles(self,command):
-        self._getFile(["GET", "*", command[1], command[2] ] )
+        request = command[1:]
+        if len(request) != 2:
+            print("Invalid syntax. Should be <command> from <username>")
+            exit(1)
+        userName = command[-1]
+        idx = self._getUserIdByName(userName)
+        for file in self.usersDescriptor["HOST"][idx]["FILES"]: 
+            preapredCommand = ["GET", file , "FROM" , userName ]
+            self._getFile(preapredCommand)
+
 
     def _getFile(self, command):
         self._loadLastActiveHosts()
-        FILES = []
         USERS = []
         FILES = command[1:]
         
@@ -233,13 +243,13 @@ class client:
                USERS = command[(idx+1):]
                USERS = list( filter(None,USERS))
                break;
-
         #  it has to be at least one file in command and if '*' occured it can't be more files as args
         if len(FILES) == 0  or  len(FILES) > 1 and '*' in FILES:
             print("Incorrect syntax ")
             self._handleCommand("HELP")
             return False
         
+
         if len(USERS) != 1:
             print("You have to pass exacly one user");
             exit(1)
@@ -265,7 +275,7 @@ class client:
             raise USPSyntaxError('Bad syntax! Expected number in place of fileid')
 
         username = command[3]
-
+       
         self._loadLastActiveHosts()
 
         with open(INDEX_FILE_PATH, 'r') as idxFile:
@@ -289,18 +299,27 @@ class client:
         print(f'User \'{username}\' is unknown.')
         exit(1)
 
-    def _searchUsr(self, usr):
+    def _getUserIdByName(self, usr):
         for i in range(len(self.usersDescriptor["HOST"])):
             if usr == self.usersDescriptor["HOST"][i]["NICK"]:
                 return i
         return -1
-    
+
+    def _getUserIdByIP(self, ip):
+        self._loadLastActiveHosts()
+        hosts = self.usersDescriptor['HOST']
+        print(ip)
+        for i in range(len(hosts)):
+            if ip == hosts[i]["IP"]:
+                return i
+        return -1
 
     def _downloadFile(self, fileName, ip):
         if fileName.rfind('/') != -1:
             fileName_2 = fileName[fileName.rfind('/')+1:]
         else:
             fileName_2 =  fileName
+        
         fileDownloadPath = self.filePath + "/" + fileName_2
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -390,7 +409,7 @@ class client:
             if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip) != None:
                 ipTable.append(ip)
             else:
-                usrIdx = self._searchUsr(ip)
+                usrIdx = self._getUserIdByName(ip)
                 if usrIdx != -1:
                     ipTable.append( self.usersDescriptor["HOST"][usrIdx]["IP"] )
 
@@ -405,10 +424,9 @@ class client:
                 ipTable.append(usr["IP"])
         else:
             ipTable = self._translateAddress(reqestedUsers)
-            
+        
         for i, host in enumerate(ipTable):
             try:
-                print(host)
                 self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 self.sock.connect( (host, self.usersDescriptor["PORT"] ) )
@@ -440,31 +458,28 @@ class client:
             command.append("*")
 
         self._loadLastActiveHosts()
+        
         ipTable = self._getFileList(command)
-
-        idxFile = open(INDEX_FILE_PATH, 'w')
+        print(self.userFiles)
 
         print("Available files: ")
         for ip in ipTable:
             print("IP :  {} ".format( ip ) )    
             print(f"\tID -- FILENAME")
-
-            # starts file list for given user
-            idxFile.write(ip)
-            idxFile.write(":")
-            for id,filename in enumerate(self.userFiles[ip]):
-                print(f"\t {id} -- {filename}")
-
+            idx = self._getUserIdByIP(ip)
+            self.usersDescriptor["HOST"][idx]["FILES"] = []
+            for i, file in enumerate(self.userFiles[ip]):
+                print("{} -- {}".format(i,file))
+                self.usersDescriptor["HOST"][idx]["FILES"].append(file)
+        self.saveUserInfo()
+            
                 # Adds file to index file for given user
                 # each file is separated with space
                 # If filename constains space it must be escaped
-                idxFile.write(filename.replace(' ','\x00'))
-                idxFile.write(' ')
-
+                
             # New line before next user
-            idxFile.write('\n')
+            
 
-        idxFile.close()
 
     def _printHelp(self, command):
         print("Available commands : ")
@@ -519,49 +534,67 @@ class client:
             print("Wrong parameters")
 
     def _saveActiveHosts(self):
-        with open("./settings/hosts.txt","w") as f:
+            self.saveUserInfo()
+            
+    def saveUserInfo(self):
+        # when file contains space character substitude its with 0x0
+        # file structure IP=HOST 0x2 file1 0x20 file2 0x20 ... fileN \n
+        with open("./settings/hosts.txt", 'w') as f:
             f.write("# This file conatins all previously found hosts\n")
             f.write("# The hosts may be not actual\n")
             f.write("# Run client with SCAN argument to get currently active servers\n")
-            f.write("[HOSTS]\n")
+            f.write("#[HOSTS]#\n")
             for user in self.usersDescriptor["HOST"]:
-                f.write("{}={}\n".format(user["IP"],user['NICK']) )  
-   
+                files = "\x00".join(user["FILES"])
+                f.write("{}={}\x02{}\n".format(user["IP"],user['NICK'],files))
+
     def _loadLastActiveHosts(self, force=False):
         global HOSTSLOADED
 
         if HOSTSLOADED == True and force == False:
             return
+        
+        self.usersDescriptor = {
+            "HOST" :[],    
+            "PORT" : 53025
+        }
 
-        config = configparser.ConfigParser()
-        config.read("./settings/hosts.txt")
-        print("Last active hosts : ")
-        try:
-            if "HOSTS" in config:
-                for key in config["HOSTS"]:
-                    self.usersDescriptor["HOST"].append( { "IP" : key, "NICK" : config["HOSTS"][key] } )
-                    print("IP :  {}  NICK : {}".format(key ,config["HOSTS"][key] ) )  
-        except:
-            raise parseError("Error while parsing host file")
+        with open("./settings/hosts.txt", "r") as fileObject:    
+            for line in fileObject:
+                line = line.split('#')[0].replace('\n','')
+                
+                if len(line) is 0:
+                    continue   
+                self._parseConfigFile(line)
 
         HOSTSLOADED = True
         
         
+    def _parseConfigFile(self, configLine):
+        # separate host detailes and his files
+        hostDetails = configLine.split('\x02')
+        #first part keeps host info 
+        hostInfo = hostDetails[0].split('=')
+        self.usersDescriptor['HOST'].append( {"IP" : hostInfo[0], "NICK" : hostInfo[1], "FILES" : [] } )
+        # get last added item
+        idx = len( self.usersDescriptor["HOST"] ) - 1
+        
+        # in case user has no files add host info and leave 
+        if len(hostDetails) == 1:
+            self.usersDescriptor["HOST"][idx]["NICK"] = self.usersDescriptor["HOST"][idx]["NICK"]  
+            return
+        
+       # else append files to host
+        hostFiles = hostDetails[1].split('\x00')
+       
+        for file in hostFiles:
+            self.usersDescriptor["HOST"][idx]["FILES"].append( file )
+
 
     def _showActiveUsers(self):
         print("Available hosts: ")
         for user in self.usersDescriptor["HOST"]:
             print("IP :  {}  NICK : {}".format(user["IP"],user['NICK']) )  
-
-    def _getUsernameByIP(self, ip):
-        self._loadLastActiveHosts()
-
-        hosts = self.usersDescriptor['HOST']
-        for host in hosts:
-            if ip == host['IP']:
-                return host['NICK']
-
-        return None
 
     if os.name == "nt":
         def _get_connection_name_from_reg(self, regValue):
