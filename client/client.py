@@ -274,30 +274,20 @@ class client:
         except ValueError:
             raise USPSyntaxError('Bad syntax! Expected number in place of fileid')
 
-        username = command[3]
-       
         self._loadLastActiveHosts()
 
-        with open(INDEX_FILE_PATH, 'r') as idxFile:
-            for line in idxFile:
-                line = line.split(':')
-                if self._getUsernameByIP(line[0]) == username:
-                    try:
-                        # Modify current command so that instead of file id 
-                        # there will be filename.
-                        # After that it is ready to be passed to self._getFile
-                        # Also restores escaped space if any
-                        command[1] = line[1].split(' ')[fileid].replace('\x00',' ')
-                        command[0] = 'get'
-                    except IndexError:
-                        print(f'There is no file with given id. ({fileid})')
-                        exit(2)
-
-                    self._getFile(command)
-                    return 0
-
-        print(f'User \'{username}\' is unknown.')
-        exit(1)
+        username = command[3]
+        users = []
+        users.append(username)
+        print(users)
+        ip = self._translateAddress( users )
+        ip = ip[0]
+        idx = self._getUserIdByIP(ip)
+        file = self.usersDescriptor["HOST"][idx]["FILES"][fileid]
+        
+        preapredCommand = ["GET", file, "FROM", ip ]
+        self._getFile(preapredCommand)
+        return 0
 
     def _getUserIdByName(self, usr):
         for i in range(len(self.usersDescriptor["HOST"])):
