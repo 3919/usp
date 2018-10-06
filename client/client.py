@@ -41,7 +41,8 @@ class client:
         self.userConfig ={}
         # keep user files
         self.userFiles = {}
-
+        # // create hosts file
+        open(os.path.join("settings","hosts.txt"),'w').close()
         self._handleCommand("SETTINGS init")
         self._handleCommand("HOSTS")
         
@@ -308,7 +309,7 @@ class client:
         else:
             fileName_2 =  fileName
         
-        fileDownloadPath = self.filePath + "/" + fileName_2
+        fileDownloadPath = os.path.join(self.filePath, fileName_2)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         
