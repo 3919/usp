@@ -279,7 +279,6 @@ class client:
         username = command[3]
         users = []
         users.append(username)
-        print(users)
         ip = self._translateAddress( users )
         ip = ip[0]
         idx = self._getUserIdByIP(ip)
@@ -298,7 +297,6 @@ class client:
     def _getUserIdByIP(self, ip):
         self._loadLastActiveHosts()
         hosts = self.usersDescriptor['HOST']
-        print(ip)
         for i in range(len(hosts)):
             if ip == hosts[i]["IP"]:
                 return i
@@ -332,9 +330,10 @@ class client:
         dataRead = 0;
         self.isDownloadInProgress = True;
         speedRatioThread = threading.Thread(target=self.calcluateSpeedRatio, args=(fileSize,) )
+        speedRatioThread.daemon = True
         speedRatioThread.start()
 
-        print("Downloadin file: {}, from :{} \n".format(fileDownloadPath,ip) )
+        print("Downloading file: {}, from :{} \n".format(fileDownloadPath,ip) )
 
         # Loop until download file name is correct for local file system
         while(True):
