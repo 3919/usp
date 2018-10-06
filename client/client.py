@@ -42,7 +42,7 @@ class client:
         # keep user files
         self.userFiles = {}
         # // create hosts file
-        open(os.path.join("settings","hosts.txt"),'w').close()
+        
         self._handleCommand("SETTINGS init")
         self._handleCommand("HOSTS")
         
@@ -309,7 +309,7 @@ class client:
         else:
             fileName_2 =  fileName
         
-        fileDownloadPath = os.path.join(self.filePath, fileName_2)
+        fileDownloadPath = os.path.join(self.filePath, fileName_2) 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         
@@ -462,14 +462,6 @@ class client:
                 print("{} -- {}".format(i,file))
                 self.usersDescriptor["HOST"][idx]["FILES"].append(file)
         self.saveUserInfo()
-            
-                # Adds file to index file for given user
-                # each file is separated with space
-                # If filename constains space it must be escaped
-                
-            # New line before next user
-            
-
 
     def _printHelp(self, command):
         print("Available commands : ")

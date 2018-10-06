@@ -40,6 +40,8 @@ copyfile('../server/sockethelpers.py', os.path.join(SERVER_PATH,'sockethelpers.p
 CLIENT_SETTINGS = os.path.join(CLIENT_PATH, 'settings')
 os.makedirs(CLIENT_SETTINGS, exist_ok=True)
 
+open(os.path.join(CLIENT_SETTINGS,"hosts.txt" ), "w" ).close()
+
 SERVER_SETTINGS = os.path.join(SERVER_PATH, 'settings')
 os.makedirs(SERVER_SETTINGS, exist_ok=True)
 
