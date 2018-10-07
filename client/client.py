@@ -304,12 +304,7 @@ class client:
         return -1
 
     def _downloadFile(self, fileName, ip):
-        if fileName.rfind('/') != -1:
-            fileName_2 = fileName[fileName.rfind('/')+1:]
-        else:
-            fileName_2 =  fileName
-        
-        fileDownloadPath = os.path.join(self.filePath, fileName_2) 
+        fileDownloadPath = os.path.join(self.filePath, fileName) 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         
@@ -338,13 +333,19 @@ class client:
 
         # Loop until download file name is correct for local file system
         while(True):
+            sepPos = fileName.rfind(os.sep)
+            if sepPos != -1:
+                # Filename contains separator, before downloading a file
+                # directory tree must be prepared
+                os.makedirs(os.path.join(self.filePath, fileName[:sepPos]), exist_ok=True)
+
             try:
                 f = open(fileDownloadPath, "wb+")
                 break # filename is OK, break from loop
             except OSError as e:
                 print("Error ! Local file system prohibits such files names.")
                 newFileName = input("Please supply alternate name: ")
-                fileDownloadPath = fileDownloadPath[:fileDownloadPath.rfind('/')+1] + newFileName
+                fileDownloadPath = fileDownloadPath[:fileDownloadPath.rfind(os.sep)+1] + newFileName
 
         while self.dataLeft > 0:
             data =  self.sock.recv(self.dataLeft)
