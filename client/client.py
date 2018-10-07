@@ -8,8 +8,9 @@ import hashlib
 import configparser 
 import re
 
-INDEX_FILE_PATH = "user.idx"
+from helpers import toLocalPathSeparator
 
+INDEX_FILE_PATH = "user.idx"
 
 # global flags
 HOSTSLOADED = False
@@ -305,6 +306,10 @@ class client:
 
     def _downloadFile(self, fileName, ip):
         fileDownloadPath = os.path.join(self.filePath, fileName) 
+
+        # Convert slashes to local one
+        fileDownloadPath = toLocalPathSeparator(fileDownloadPath)
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         
@@ -333,7 +338,9 @@ class client:
 
         # Loop until download file name is correct for local file system
         while(True):
-            sepPos = fileName.rfind(os.sep)
+            # Using linux like separator because server need to send
+            # directory tree hierarchy in linux convention
+            sepPos = fileName.rfind('/')
             if sepPos != -1:
                 # Filename contains separator, before downloading a file
                 # directory tree must be prepared
@@ -572,7 +579,6 @@ class client:
        
         for file in hostFiles:
             self.usersDescriptor["HOST"][idx]["FILES"].append( file )
-
 
     def _showActiveUsers(self):
         print("Available hosts: ")
