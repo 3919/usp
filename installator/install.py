@@ -27,6 +27,7 @@ SERVER_PATH = os.path.join(INSTALLATION_PATH, 'server')
 os.makedirs(CLIENT_PATH, exist_ok=True)
 
 copyfile('../client/client.py', os.path.join(CLIENT_PATH,'client.py'))
+copyfile('../client/helpers.py', os.path.join(CLIENT_PATH,'helpers.py'))
 copyfile('../client/preferences.conf', os.path.join(CLIENT_PATH,'preferences.conf'))
 
 # Server files
