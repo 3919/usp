@@ -192,10 +192,14 @@ class Session():
 
     def getlistResponse(self):
         filelist = glob.glob(os.path.join(self.shared_path,'**'),recursive=True)
+
         for f in filelist:
             if os.path.isdir(f):
                 continue
-            self.socket.sendall(bytes(os.path.relpath(f,self.shared_path),'utf-8'))
+
+            # Relpath to shared path and also linux path convetion swap 
+            relPath = os.path.relpath(f,self.shared_path).replace('\\','/')
+            self.socket.sendall(bytes(relPath, 'utf-8'))
             self.socket.sendall(b'\0')
         self.socket.sendall(b'\n')
 

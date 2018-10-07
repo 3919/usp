@@ -8,6 +8,11 @@ USP's clients. It listenes on port 53025. Each request must
 be ended with endline to indicate end of message. Each
 message cant be longer than 1024 bytes. Available requests:
 
+	---- Files path convetion----
+	Server when asked about its file list
+	must send all paths in linux path convetion
+	ie using forward slashes '/' and not '\\'
+
 --------
 1. GET
 
