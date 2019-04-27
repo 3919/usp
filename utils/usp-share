@@ -1,0 +1,28 @@
+#!/usr/bin/python3
+import os
+import sys
+
+def usage():
+  print('Program for adding files to share directory of usp. ( By adding soft links )')
+  print(f'Usage: {os.path.basename(sys.argv[0])} <file_name_to_share> [<shared_file_name>]')
+
+if len(sys.argv) < 2:
+  usage()
+  exit(-1)
+
+if len(sys.argv) == 3:
+  shared_file_name = sys.argv[2]
+else:
+  shared_file_name = os.path.basename(sys.argv[1])
+
+usp_shared_dir_path = '/home/holz/etc/shared/'
+
+try:
+  os.symlink(sys.argv[1], os.path.join(usp_shared_dir_path, shared_file_name))
+except FileExistsError:
+  print(f'Failed to add {sys.argv[1]} to shared bacause file with requested name already exists.')
+  exit(-2)
+
+print(f'{sys.argv[1]} added to shared as {shared_file_name}')
+
+

@@ -1,0 +1,24 @@
+#!/usr/bin/python3
+import os
+import sys
+
+def usage():
+  print('Program for removing files from shared directory of usp.')
+  print(f'Usage: {os.path.basename(sys.argv[0])} <file_name> [<file_name> ...]')
+
+if len(sys.argv) < 2:
+  usage()
+  exit(-1)
+
+usp_shared_dir_path = '/home/holz/etc/shared/'
+
+for file_to_remove in sys.argv[1:]:
+  try:
+    os.remove(os.path.join(usp_shared_dir_path, file_to_remove))
+  except FileNotFoundError:
+    print(f'Failed to remove {file_to_remove} because file does not exist.')
+    continue
+
+  print(f'{file_to_remove} removed from shared')
+
+
