@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import os
 import sys
 from instalib import fetchArg, CompilationException
