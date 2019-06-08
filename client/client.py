@@ -435,10 +435,10 @@ class client:
                 while byteRead != b'\n':
                     byteRead = self.sock.recv(1)
 
-                    if byteRead == b'\0':
-                        if host not in self.userFiles:
-                            self.userFiles.update({ host : [ ] })
+                    if host not in self.userFiles:
+                        self.userFiles.update({ host : [ ] })
 
+                    if byteRead == b'\0':
                         self.userFiles[host].append(fileName)  
                         fileName = ""
                     else:
