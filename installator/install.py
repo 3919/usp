@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 import os
 import sys
-from instalib import fetchPath, CompilationException
+from instalib import fetchPath, createGlobalInfoDirectory, CompilationException, USP_INFO_FILE
 from shutil import copyfile
 from subprocess import call as subprocessCall
 from pathlib import Path
+import shutil
+import random
 
 print("USP INSTALLER")
 
@@ -24,6 +26,9 @@ INSTALLATION_PATH = os.path.join(INSTALLATION_PATH,'USP')
 CLIENT_PATH = os.path.join(INSTALLATION_PATH, 'client')
 
 SERVER_PATH = os.path.join(INSTALLATION_PATH, 'server')
+
+# Creates directory which contains files with general info about currently installed usp instance
+createGlobalInfoDirectory(INSTALLATION_PATH)
 
 # Client files
 os.makedirs(CLIENT_PATH, exist_ok=True)
