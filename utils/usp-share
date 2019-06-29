@@ -15,7 +15,7 @@ if len(sys.argv) == 3:
 else:
   shared_file_name = os.path.basename(sys.argv[1])
 
-usp_shared_dir_path = '/home/holz/etc/shared/'
+usp_shared_dir_path = 'NOTFOUND'
 
 try:
   os.symlink(sys.argv[1], os.path.join(usp_shared_dir_path, shared_file_name))

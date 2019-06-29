@@ -10,7 +10,7 @@ if len(sys.argv) < 2:
   usage()
   exit(-1)
 
-usp_shared_dir_path = '/home/holz/etc/shared/'
+usp_shared_dir_path = 'NOTFOUND'
 
 for file_to_remove in sys.argv[1:]:
   try:
